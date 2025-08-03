@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>411</width>
-    <height>337</height>
+    <width>450</width>
+    <height>481</height>
    </rect>
   </property>
   <property name="font">
@@ -37,7 +37,11 @@
      <item>
       <widget class="QLineEdit" name="Name">
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(255, 255, 255);</string>
+        <string notr="true">background-color:rgba(0, 0, 0, 0);
+border:none;
+border-bottom:2px solid rgba(105, 118, 132, 255);
+color:rgba(255, 255, 255, 230);
+padding-bottom: 7px;</string>
        </property>
        <property name="placeholderText">
         <string>name</string>
@@ -47,7 +51,11 @@
      <item>
       <widget class="QLineEdit" name="Password">
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(255, 255, 255);</string>
+        <string notr="true">background-color:rgba(0, 0, 0, 0);
+border:none;
+border-bottom:2px solid rgba(105, 118, 132, 255);
+color:rgba(255, 255, 255, 230);
+padding-bottom: 7px;</string>
        </property>
        <property name="placeholderText">
         <string>password</string>
@@ -55,15 +63,52 @@
       </widget>
      </item>
      <item>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>15</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
       <widget class="QPushButton" name="OK">
        <property name="cursor">
         <cursorShape>PointingHandCursor</cursorShape>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(255, 255, 255);</string>
+        <string notr="true">QPushButton {
+    background-color: white;
+    color: black;
+    border: none;
+    border-radius: 8px;
+    padding: 7px;
+    font-weight: bold;
+    font-size: 14px;
+ 	cursor: pointer;
+	
+}
+
+QPushButton:hover {
+    background-color: #1DB954; /* Spotify green / fresh green */
+    color: white;
+}
+
+QPushButton:pressed {
+    background-color: #17a444;
+    color: white;
+}
+</string>
        </property>
        <property name="text">
-        <string>OK</string>
+        <string>Login</string>
        </property>
       </widget>
      </item>
