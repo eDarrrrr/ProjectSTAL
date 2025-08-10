@@ -5,6 +5,8 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtGui import QCursor, QColor, QIcon
 
+import resource
+
 class loginpage(QDialog):
     def __init__(self):
         super().__init__()
