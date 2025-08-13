@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>450</width>
+    <width>414</width>
     <height>481</height>
    </rect>
   </property>
@@ -25,7 +25,7 @@
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
-      <widget class="QLabel" name="label_2">
+      <widget class="QLabel" name="logo">
        <property name="styleSheet">
         <string notr="true">image: url(:/asset/assets/Logo (1).png);</string>
        </property>
@@ -35,7 +35,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="Name">
+      <widget class="QLineEdit" name="username">
        <property name="styleSheet">
         <string notr="true">background-color:rgba(0, 0, 0, 0);
 border:none;
@@ -44,12 +44,12 @@ color:rgba(255, 255, 255, 230);
 padding-bottom: 7px;</string>
        </property>
        <property name="placeholderText">
-        <string>name</string>
+        <string>Username</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="Password">
+      <widget class="QLineEdit" name="password">
        <property name="styleSheet">
         <string notr="true">background-color:rgba(0, 0, 0, 0);
 border:none;
@@ -58,7 +58,43 @@ color:rgba(255, 255, 255, 230);
 padding-bottom: 7px;</string>
        </property>
        <property name="placeholderText">
-        <string>password</string>
+        <string>Password</string>
+       </property>
+      </widget>
+     </item>
+     <item alignment="Qt::AlignHCenter">
+      <widget class="QPushButton" name="clickHereMakeAccount">
+       <property name="maximumSize">
+        <size>
+         <width>170</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="cursor">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="layoutDirection">
+        <enum>Qt::LeftToRight</enum>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+background-color: transparent;
+border:none;
+color:rgba(255, 255, 255, 230);
+
+}
+
+QPushButton:hover {
+    color: rgb(125, 255, 255);
+}
+
+QPushButton:pressed {
+    color: rgb(125, 230, 255);
+}
+</string>
+       </property>
+       <property name="text">
+        <string>Dont have an account? Click here</string>
        </property>
       </widget>
      </item>
@@ -79,7 +115,7 @@ padding-bottom: 7px;</string>
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="OK">
+      <widget class="QPushButton" name="loginbutton">
        <property name="cursor">
         <cursorShape>PointingHandCursor</cursorShape>
        </property>
