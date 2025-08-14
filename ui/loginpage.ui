@@ -66,7 +66,7 @@ padding-bottom: 7px;</string>
       <widget class="QPushButton" name="clickHereMakeAccount">
        <property name="maximumSize">
         <size>
-         <width>170</width>
+         <width>400</width>
          <height>16777215</height>
         </size>
        </property>
