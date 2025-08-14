@@ -6,15 +6,18 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1280</width>
-    <height>800</height>
+    <width>1040</width>
+    <height>554</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>STAL - Stock Analyzer</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="mainLayout" stretch="0,1">
+   <layout class="QHBoxLayout" name="mainLayout" stretch="0,0">
     <property name="spacing">
      <number>0</number>
     </property>
@@ -89,14 +92,14 @@ QToolButton:pressed {
         <number>12</number>
        </property>
        <item>
-        <widget class="QLabel" name="brand">
+        <widget class="QLabel" name="logo">
          <property name="enabled">
           <bool>true</bool>
          </property>
          <property name="maximumSize">
           <size>
-           <width>200</width>
-           <height>125</height>
+           <width>250</width>
+           <height>140</height>
           </size>
          </property>
          <property name="sizeIncrement">
@@ -118,15 +121,31 @@ QToolButton:pressed {
           <bool>true</bool>
          </property>
          <property name="margin">
-          <number>1</number>
+          <number>-14</number>
          </property>
          <property name="indent">
-          <number>-1</number>
+          <number>1</number>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="btnResearch">
+        <spacer name="verticalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Fixed</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>36</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QToolButton" name="Dashboard">
          <property name="text">
           <string>Dashboard</string>
          </property>
@@ -136,16 +155,25 @@ QToolButton:pressed {
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="btnCompany">
+        <widget class="QToolButton" name="About">
          <property name="text">
           <string>About</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="btnNews">
+        <widget class="QToolButton" name="Exit">
          <property name="text">
           <string>Exit</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>false</bool>
          </property>
         </widget>
        </item>
@@ -216,9 +244,9 @@ QFrame.card {
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>0</y>
-         <width>1043</width>
-         <height>986</height>
+         <y>-874</y>
+         <width>848</width>
+         <height>1372</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="contentLayout">
@@ -242,7 +270,7 @@ QFrame.card {
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>340</height>
+            <height>300</height>
            </size>
           </property>
           <property name="font">
@@ -360,146 +388,117 @@ QFrame.card {
          </widget>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="cardsLayout">
-          <property name="spacing">
-           <number>16</number>
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
           </property>
-          <item>
-           <widget class="QFrame" name="card">
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>80</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+         <widget class="QStackedWidget" name="Page">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>800</width>
+            <height>100</height>
+           </size>
+          </property>
+          <property name="currentIndex">
+           <number>1</number>
+          </property>
+          <widget class="QWidget" name="PageDashboard" native="true">
+           <layout class="QHBoxLayout" name="cardsLayout">
+            <property name="spacing">
+             <number>16</number>
+            </property>
+            <item alignment="Qt::AlignHCenter">
+             <widget class="QLabel" name="label">
+              <property name="styleSheet">
+               <string notr="true">color: rgb(255, 255, 255);</string>
+              </property>
+              <property name="text">
+               <string>Dashboard</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="PageAbout">
+           <property name="minimumSize">
+            <size>
+             <width>1000</width>
+             <height>340</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background: transparent;</string>
+           </property>
+           <widget class="QLabel" name="label_2">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>10</y>
+              <width>1000</width>
+              <height>300</height>
+             </rect>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="minimumSize">
              <size>
-              <width>0</width>
-              <height>160</height>
+              <width>1000</width>
+              <height>255</height>
              </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>900</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <family>Arial</family>
+              <pointsize>12</pointsize>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
             </property>
             <property name="styleSheet">
-             <string notr="true">QFrame#card1 { /* inherit .card */ }</string>
+             <string notr="true">color: rgb(255, 255, 255);
+background: #323232;
+border-radius: 25px;</string>
             </property>
-            <layout class="QVBoxLayout" name="card1Layout">
-             <property name="leftMargin">
-              <number>16</number>
-             </property>
-             <property name="topMargin">
-              <number>16</number>
-             </property>
-             <property name="rightMargin">
-              <number>16</number>
-             </property>
-             <property name="bottomMargin">
-              <number>16</number>
-             </property>
-             <item>
-              <widget class="QLabel" name="labelCard1">
-               <property name="styleSheet">
-                <string notr="true">font: 600 12pt &quot;Segoe UI&quot;;</string>
-               </property>
-               <property name="text">
-                <string>Card 1</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="descCard1">
-               <property name="text">
-                <string>Short description text…</string>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QFrame" name="card">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>160</height>
-             </size>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:12pt; font-weight:600;&quot;&gt;About STAL&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Version:&lt;/span&gt; 1.0.0&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Description:&lt;/span&gt; STAL (Stock Analyzer) adalah aplikasi analisis saham berbasis Python dan PyQt5 yang&lt;br/&gt;membantu investor memahami tren pasar melalui visualisasi data yang intuitif.&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Developer:&lt;/span&gt; Kelompok 5&lt;br/&gt;- Muhammad Haidar Al Ghifari&lt;br/&gt;- Rania Maryam Muthmainah&lt;br/&gt;- Fathih&lt;br/&gt;- Leslie&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Contact us:&lt;/span&gt; line: hdrghif (Haidar)&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
-            <layout class="QVBoxLayout" name="card2Layout">
-             <property name="leftMargin">
-              <number>16</number>
-             </property>
-             <property name="topMargin">
-              <number>16</number>
-             </property>
-             <property name="rightMargin">
-              <number>16</number>
-             </property>
-             <property name="bottomMargin">
-              <number>16</number>
-             </property>
-             <item>
-              <widget class="QLabel" name="labelCard2">
-               <property name="styleSheet">
-                <string notr="true">font: 600 12pt &quot;Segoe UI&quot;;</string>
-               </property>
-               <property name="text">
-                <string>Card 2</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="descCard2">
-               <property name="text">
-                <string>Short description text…</string>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QFrame" name="card">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>160</height>
-             </size>
+            <property name="textFormat">
+             <enum>Qt::RichText</enum>
             </property>
-            <layout class="QVBoxLayout" name="card3Layout">
-             <property name="leftMargin">
-              <number>16</number>
-             </property>
-             <property name="topMargin">
-              <number>16</number>
-             </property>
-             <property name="rightMargin">
-              <number>16</number>
-             </property>
-             <property name="bottomMargin">
-              <number>16</number>
-             </property>
-             <item>
-              <widget class="QLabel" name="labelCard3">
-               <property name="styleSheet">
-                <string notr="true">font: 600 12pt &quot;Segoe UI&quot;;</string>
-               </property>
-               <property name="text">
-                <string>Card 3</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="descCard3">
-               <property name="text">
-                <string>Short description text…</string>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
            </widget>
-          </item>
-         </layout>
+          </widget>
+         </widget>
         </item>
         <item>
          <spacer name="spacer1">
@@ -514,6 +513,17 @@ QFrame.card {
           </property>
          </spacer>
         </item>
+        <item>
+         <widget class="QLabel" name="Bawahan">
+          <property name="styleSheet">
+           <string notr="true">background-color: transparent;
+color: rgb(255, 255, 255);</string>
+          </property>
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;© 2025 STAL - Stock Analyzer | v1.0.0&lt;/p&gt;&lt;p&gt;Contact: hdrghif (Line)&lt;/p&gt;&lt;p&gt;Developed by Kelompok 5&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;This application is for informational purposes only and does not constitute financial advice.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </widget>
@@ -525,13 +535,13 @@ QFrame.card {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1280</width>
+     <width>1040</width>
      <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFIle">
     <property name="title">
-     <string>FIle</string>
+     <string>File</string>
     </property>
     <addaction name="actionExit"/>
    </widget>
@@ -539,6 +549,9 @@ QFrame.card {
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionExit">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Exit</string>
    </property>
@@ -546,7 +559,23 @@ QFrame.card {
  </widget>
  <resources>
   <include location="../resource.qrc"/>
-  <include location="../resource.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>Exit</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>55</x>
+     <y>341</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>183</x>
+     <y>0</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
