@@ -30,9 +30,9 @@ def get_dividends(ticker: str):
 def get_fundamentals(ticker):
     stock = yf.Ticker(ticker)
 
-    info = stock.info  # data fundamental umum
-    financials = stock.financials  # laporan keuangan tahunan
-    quarterly = stock.quarterly_financials  # laporan keuangan per kuartal
+    info = stock.info  
+    financials = stock.financials  
+    quarterly = stock.quarterly_financials  
 
     fundamentals = {
         "Market Cap": info.get("marketCap"),
