@@ -1,124 +1,163 @@
+# pip install yfinance pandas matplotlib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import yfinance as yf
 
-import os
+# ========== UTIL ==========
 
-while True:
-    inputan = input("Search: ")
-    file_path = f"Data/Stock Market Data/{inputan}.csv"
-    if os.path.exists(file_path):
-        SearchResult = pd.read_csv(file_path)
-        break
+def normalize_ticker(user_input: str) -> str:
+    """Biar rapi: uppercase & trimming. Tambah .NS kalau kamu mau default ke India."""
+    t = user_input.strip().upper()
+    # Contoh jika ingin otomatis .NS (matikan kalau tidak perlu):
+    # if '.' not in t:
+    #     t = t + ".NS"
+    return t
+
+def download_one_ticker(ticker: str) -> pd.DataFrame:
+    """
+    Download 1 ticker dari yfinance, ratakan kolom jika MultiIndex,
+    pastikan 'Date' jadi kolom biasa, dan tambah Year/Month/Day.
+    """
+    raw = yf.download(
+        ticker,
+        period="max",
+        interval="1d",
+        auto_adjust=False,
+        group_by="ticker",
+        progress=False,
+        threads=False,
+    )
+    if raw is None or raw.empty:
+        raise ValueError("Data kosong.")
+
+    # Jika kolom MultiIndex, ambil level untuk ticker
+    if isinstance(raw.columns, pd.MultiIndex):
+        lv0 = raw.columns.get_level_values(0)
+        lv1 = raw.columns.get_level_values(1)
+        if ticker in lv1:            # (field, ticker)
+            dfp = raw.xs(ticker, axis=1, level=1)
+        elif ticker in lv0:          # (ticker, field)
+            dfp = raw.xs(ticker, axis=1, level=0)
+        else:
+            dfp = raw.copy()
+        dfp = dfp.loc[:, ~dfp.columns.duplicated()].copy()
     else:
-        print("File not found. Silakan coba lagi.")
+        dfp = raw.copy()
 
+    # Buang timezone di index jika ada, lalu jadikan kolom 'Date'
+    if isinstance(dfp.index, pd.DatetimeIndex):
+        try:
+            dfp.index = dfp.index.tz_localize(None)
+        except Exception:
+            pass
+    dfp = dfp.reset_index()
+    # Pastikan kolom nama 'Date'
+    if 'Date' not in dfp.columns:
+        dfp = dfp.rename(columns={dfp.columns[0]: 'Date'})
 
-SearchResult=pd.read_csv(f"Data/Stock Market Data/{inputan}.csv")
+    # Rapikan dan kolom bantu
+    dfp = dfp.sort_values('Date').reset_index(drop=True)
+    dfp['Year'] = dfp['Date'].dt.year
+    dfp['Month'] = dfp['Date'].dt.month
+    dfp['Day'] = dfp['Date'].dt.day
+    return dfp
 
-SearchResult['Date'] = pd.to_datetime(SearchResult['Date'])
+# ========== VISUAL ==========
 
-# 3. Buang kolom yang tidak dipakai
-drop_cols = ['Trades', 'Deliverable Volume', '%Deliverble']
-SearchResult = SearchResult.drop(columns=[c for c in drop_cols if c in SearchResult.columns], errors='ignore')
-
-# 4. Tambah kolom Year, Month, Day
-SearchResult['Year'] = SearchResult['Date'].dt.year
-SearchResult['Month'] = SearchResult['Date'].dt.month
-SearchResult['Day'] = SearchResult['Date'].dt.day
-
-# 5. Lihat data awal
-print(SearchResult.head())
-
-
-
-def StockData():
-    plt.figure(figsize=(10,5))
-    plt.plot(SearchResult['Date'], SearchResult['Open'], label=f'{inputan} - Open Price')
+def StockData(SearchResult: pd.DataFrame, ticker: str, currency_label="DOLLAR"):
+    plt.figure(figsize=(10, 5))
+    plt.plot(SearchResult['Date'], SearchResult['Open'], label=f'{ticker} - Open Price')
     plt.xlabel("Date")
-    plt.ylabel("Price (INR)")
-    plt.title(f"Harga Open {inputan}")
+    plt.ylabel(f"Price ({currency_label})")
+    plt.title(f"Harga Open {ticker} ({currency_label})")
     plt.legend()
+    plt.tight_layout()
     plt.show()
 
-def VolumeData():
-    plt.figure(figsize=(10,5))
-    plt.plot(SearchResult['Date'], SearchResult['Volume'], label=f'{inputan} - Volume', color='orange')
+def VolumeData(SearchResult: pd.DataFrame, ticker: str):
+    plt.figure(figsize=(10, 5))
+    plt.plot(SearchResult['Date'], SearchResult['Volume'], label=f'{ticker} - Volume')
     plt.xlabel("Date")
     plt.ylabel("Volume")
-    plt.title(f"Volume {inputan}")
+    plt.title(f"Volume {ticker}")
     plt.legend()
+    plt.tight_layout()
     plt.show()
 
+# ========== ROI (SIP) ==========
 
-def ROI():
-    # ====== CONFIG ======
-    CSV_PATH = f"Data/Stock Market Data/{inputan}.csv"  # pakai saham yang dicari
-    SIP_DAY   = 30                                      # beli tiap tgl 30
-    FX_RATE   = 195.0                                   # 1 INR = 195 IDR (contoh; silakan ganti)
-    CURRENCY  = "IDR"
-    FIXED_AMOUNT = 1_000_000.0                          # Fixed amount per bulan dalam IDR
-    # ====================
+def ROI(SearchResult: pd.DataFrame, ticker: str, max_months=None):
+    """
+    Simulasi SIP bulanan:
+    - MODE 1: beli 1 lembar tiap bulan
+    - MODE 2: fixed amount tiap bulan
+    Harga dikonversi ke IDR via FX_RATE.
+    """
+    SIP_DAY = 30
+    FX_RATE = 1         # Ubah sesuai kurs: contoh 1 INR/USD -> IDR
+    CURRENCY = "DOLLAR"
+    FIXED_AMOUNT = 1_000.0  # IDR per bulan
 
-    # 1) Load & prep
-    df = pd.read_csv(CSV_PATH)
-    df['Date'] = pd.to_datetime(df['Date'])
-    df = df.sort_values('Date').reset_index(drop=True)
+    dfp = SearchResult.copy()
+    dfp = dfp.loc[:, ~dfp.columns.duplicated()].copy()
+    dfp = dfp.sort_values('Date').reset_index(drop=True)
 
-    # pastikan Close ada
-    assert 'Close' in df.columns, "Kolom 'Close' wajib ada."
+    # Tentukan kolom harga referensi
+    price_ref = 'Close' if 'Close' in dfp.columns else ('Adj Close' if 'Adj Close' in dfp.columns else None)
+    if price_ref is None:
+        raise ValueError("Butuh kolom 'Close' atau 'Adj Close'.")
 
-    # konversi harga INR -> IDR (kolom harga saja)
-    price_cols = [c for c in ['Open','High','Low','Last','Close','VWAP'] if c in df.columns]
-    for c in price_cols:
-        df[c] = df[c] * FX_RATE
+    # Konversi semua harga ke IDR (volume tidak dikonversi)
+    for c in ['Open', 'High', 'Low', 'Close', 'Adj Close']:
+        if c in dfp.columns:
+            dfp[c] = dfp[c] * FX_RATE
 
-    df['Year']  = df['Date'].dt.year
-    df['Month'] = df['Date'].dt.month
-    df['Day']   = df['Date'].dt.day
-
-    # 2) ambil satu baris per bulan (tgl 30, kalau gak ada ambil hari terakhir bulan itu)
-    def pick_monthly_row(g):
+    # Ambil 1 baris per bulan: tgl 30 kalau ada, kalau tidak hari terakhir bulan tsb.
+    def pick_monthly_row(g: pd.DataFrame) -> pd.Series:
         hit = g[g['Day'] == SIP_DAY]
-        return hit.iloc[-1] if len(hit) > 0 else g.iloc[-1]
+        return hit.iloc[-1] if len(hit) else g.iloc[-1]
 
     buys = (
-        df.groupby(['Year', 'Month'], as_index=False)
+        dfp.groupby(['Year', 'Month'], as_index=False)
           .apply(pick_monthly_row)
           .reset_index(drop=True)
           .sort_values('Date')
     )
 
-    # 3A) MODE 1: 1 lembar/bulan
-    buys_1share = buys.copy()
-    buys_1share['shares_bought'] = 1.0
-    buys_1share['cash_out'] = buys_1share['Close'] * buys_1share['shares_bought']
+    if max_months is not None:
+        buys = buys.head(max_months)
 
-    total_shares_1 = buys_1share['shares_bought'].sum()
-    total_cost_1   = buys_1share['cash_out'].sum()           # dalam IDR
-    final_price    = df['Close'].iloc[-1]                    # dalam IDR
-    final_value_1  = total_shares_1 * final_price            # dalam IDR
-    roi_1          = (final_value_1 - total_cost_1) / total_cost_1
+    # MODE 1: 1 lembar / bulan
+    buys_1 = buys.copy()
+    buys_1['shares_bought'] = 1.0
+    buys_1['cash_out'] = buys_1[price_ref] * buys_1['shares_bought']
 
-    months = len(buys_1share)
-    years  = months / 12 if months > 0 else np.nan
-    cagr_1 = (final_value_1 / total_cost_1)**(1/years) - 1 if years > 0 else np.nan
+    total_shares_1 = float(buys_1['shares_bought'].sum())
+    total_cost_1 = float(buys_1['cash_out'].sum())
+    final_price = float(dfp[price_ref].iloc[-1])
+    final_value_1 = total_shares_1 * final_price
+    roi_1 = (final_value_1 - total_cost_1) / total_cost_1 if total_cost_1 > 0 else float('nan')
 
-    # 3B) MODE 2: Fixed amount/bulan (dalam IDR)
-    buys_amt = buys.copy()
-    buys_amt['cash_out'] = FIXED_AMOUNT
-    buys_amt['shares_bought'] = buys_amt['cash_out'] / buys_amt['Close']
+    months = len(buys_1)
+    years = months / 12 if months > 0 else float('nan')
+    cagr_1 = (final_value_1 / total_cost_1) ** (1 / years) - 1 if (months > 0 and total_cost_1 > 0) else float('nan')
 
-    total_shares_2 = buys_amt['shares_bought'].sum()
-    total_cost_2   = buys_amt['cash_out'].sum()              # IDR
-    final_value_2  = total_shares_2 * final_price            # IDR
-    roi_2          = (final_value_2 - total_cost_2) / total_cost_2
-    cagr_2         = (final_value_2 / total_cost_2)**(1/years) - 1 if years > 0 else np.nan
+    # MODE 2: Fixed amount / bulan
+    buys_2 = buys.copy()
+    buys_2['cash_out'] = FIXED_AMOUNT
+    buys_2['shares_bought'] = buys_2['cash_out'] / buys_2[price_ref]
 
-    # 4) Ringkasan
+    total_shares_2 = float(buys_2['shares_bought'].sum())
+    total_cost_2 = float(buys_2['cash_out'].sum())
+    final_value_2 = total_shares_2 * final_price
+    roi_2 = (final_value_2 - total_cost_2) / total_cost_2 if total_cost_2 > 0 else float('nan')
+    cagr_2 = (final_value_2 / total_cost_2) ** (1 / years) - 1 if (months > 0 and total_cost_2 > 0) else float('nan')
+
+    # Ringkasan
     print("=== SIP Summary (beli per bulan) ===")
-    print(f"Data: {CSV_PATH}")
-    print(f"Kurs: 1 INR = {FX_RATE:.2f} {CURRENCY}")
+    print(f"Ticker: {ticker}")
+    print(f"Kurs konversi: 1 unit -> {FX_RATE:.2f} {CURRENCY}")
     print(f"Periode pembelian: {months} bulan (~{years:.2f} tahun)")
     print(f"Harga terakhir: {final_price:,.2f} {CURRENCY}")
 
@@ -130,45 +169,60 @@ def ROI():
     print(f"CAGR (approx) : {cagr_1*100:.2f}% / tahun")
 
     print("\n-- MODE 2: Fixed amount/bulan --")
-    print(f"Fixed amount  : {FIXED_AMOUNT:,.2f} {CURRENCY} per bulan")
+    print(f"Fixed amount  : {FIXED_AMOUNT:,.2f} {CURRENCY} / bulan")
     print(f"Total lembar  : {total_shares_2:.4f}")
     print(f"Total modal   : {total_cost_2:,.2f} {CURRENCY}")
     print(f"Nilai akhir   : {final_value_2:,.2f} {CURRENCY}")
     print(f"ROI           : {roi_2*100:.2f}%")
     print(f"CAGR (approx) : {cagr_2*100:.2f}% / tahun")
 
-    # 5) Plot harga + titik beli (dalam IDR)
-    plt.figure(figsize=(11,5))
-    plt.plot(df['Date'], df['Close'], label='Close Price')
-    plt.scatter(buys['Date'], buys['Close'], s=30, marker='o', label='Buy points')
-    plt.title(f'Close Price & Monthly SIP Buy Points ({CURRENCY})')
+    # Plot harga + titik beli (IDR)
+    plt.figure(figsize=(11, 5))
+    plt.plot(dfp['Date'], dfp[price_ref], label=f'{ticker} {price_ref}')
+    plt.scatter(buys['Date'], buys[price_ref], s=30, marker='o', label='Buy points')
+    plt.title(f'{price_ref} & Monthly SIP Buy Points ({CURRENCY})')
     plt.xlabel('Date')
     plt.ylabel(f'Price ({CURRENCY})')
     plt.legend()
     plt.tight_layout()
     plt.show()
 
-    # 6) Equity curve (mode fixed-amount)
+    # Equity curve (Fixed Amount)
     equity_dates, equity_values = [], []
-    shares_cum, cash_cum, buy_idx = 0.0, 0.0, 0
-    for _, row in df.iterrows():
-        while buy_idx < len(buys_amt) and buys_amt.iloc[buy_idx]['Date'].date() == row['Date'].date():
-            shares_cum += buys_amt.iloc[buy_idx]['shares_bought']
-            cash_cum   += buys_amt.iloc[buy_idx]['cash_out']
+    shares_cum, buy_idx = 0.0, 0
+    for _, row in dfp.iterrows():
+        while buy_idx < len(buys_2) and buys_2.iloc[buy_idx]['Date'].date() == row['Date'].date():
+            shares_cum += float(buys_2.iloc[buy_idx]['shares_bought'])
             buy_idx += 1
-        equity = shares_cum * row['Close']  # IDR
         equity_dates.append(row['Date'])
-        equity_values.append(equity)
+        equity_values.append(shares_cum * float(row[price_ref]))
 
-    plt.figure(figsize=(11,5))
+    plt.figure(figsize=(11, 5))
     plt.plot(equity_dates, equity_values, label=f'Equity (Fixed Amount SIP, {CURRENCY})')
-    plt.title(f'Equity Curve – Fixed Amount SIP ({CURRENCY})')
+    plt.title(f'Equity Curve – Fixed Amount SIP ({ticker}, {CURRENCY})')
     plt.xlabel('Date')
     plt.ylabel(f'Portfolio Value ({CURRENCY})')
     plt.legend()
     plt.tight_layout()
     plt.show()
 
+# ========== MAIN ==========
 
+if __name__ == "__main__":
+    while True:
+        raw = input("Search (contoh: AAPL atau TATAMOTORS.NS): ")
+        ticker = normalize_ticker(raw)
+        try:
+            SearchResult = download_one_ticker(ticker)
+            break
+        except Exception as e:
+            print(f"Error: {e}. Coba lagi.")
 
-ROI()
+    # Debug singkat:
+    print(SearchResult.columns.tolist())
+    print(SearchResult.head())
+
+    # Jalankan analisis
+    VolumeData(SearchResult, ticker)
+    StockData(SearchResult, ticker)
+    ROI(SearchResult, ticker, max_months=12)
