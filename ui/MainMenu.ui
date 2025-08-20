@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1040</width>
-    <height>554</height>
+    <width>1231</width>
+    <height>706</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -244,9 +244,9 @@ QFrame.card {
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-874</y>
-         <width>848</width>
-         <height>1372</height>
+         <y>-58</y>
+         <width>944</width>
+         <height>1312</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="contentLayout">
@@ -398,12 +398,12 @@ QFrame.card {
           <property name="sizeHint" stdset="0">
            <size>
             <width>20</width>
-            <height>80</height>
+            <height>20</height>
            </size>
           </property>
          </spacer>
         </item>
-        <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+        <item>
          <widget class="QStackedWidget" name="Page">
           <property name="enabled">
            <bool>true</bool>
@@ -414,25 +414,133 @@ QFrame.card {
             <height>100</height>
            </size>
           </property>
-          <property name="currentIndex">
-           <number>1</number>
+          <property name="styleSheet">
+           <string notr="true">background-color: transparent;</string>
           </property>
-          <widget class="QWidget" name="PageDashboard" native="true">
-           <layout class="QHBoxLayout" name="cardsLayout">
-            <property name="spacing">
-             <number>16</number>
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="PageDashboard">
+           <widget class="QWidget" name="">
+            <property name="geometry">
+             <rect>
+              <x>9</x>
+              <y>9</y>
+              <width>891</width>
+              <height>42</height>
+             </rect>
             </property>
-            <item alignment="Qt::AlignHCenter">
-             <widget class="QLabel" name="label">
-              <property name="styleSheet">
-               <string notr="true">color: rgb(255, 255, 255);</string>
-              </property>
-              <property name="text">
-               <string>Dashboard</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+            <layout class="QHBoxLayout" name="horizontalLayout">
+             <item>
+              <widget class="QLabel" name="SearchLabel">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>5</width>
+                 <height>31</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>41</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 255, 255);
+image: url(:/asset/assets/Search Logo.png);
+background-color: transparent;</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="lineEdit">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>600</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>800</width>
+                 <height>30</height>
+                </size>
+               </property>
+               <property name="sizeIncrement">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="baseSize">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="layoutDirection">
+                <enum>Qt::LeftToRight</enum>
+               </property>
+               <property name="autoFillBackground">
+                <bool>false</bool>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">background-color:rgba(0, 0, 0, 0);
+border:none;
+border-bottom:2px solid rgba(105, 118, 132, 255);
+color:rgba(255, 255, 255, 230);
+padding-bottom: 7px;</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+               </property>
+               <property name="placeholderText">
+                <string>Search</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="pushButton">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>40</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>100</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">background-color: rgb(255, 255, 255);</string>
+               </property>
+               <property name="text">
+                <string>Search</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </widget>
           <widget class="QWidget" name="PageAbout">
            <property name="minimumSize">
@@ -535,7 +643,7 @@ color: rgb(255, 255, 255);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1040</width>
+     <width>1231</width>
      <height>22</height>
     </rect>
    </property>
