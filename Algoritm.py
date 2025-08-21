@@ -4,15 +4,39 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import yfinance as yf
 
+
+SUFFIXES = ["", ".JK", ".NS", ".BO", ".L", ".TO", ".AX", ".HK", ".T", ".SI", ".DE", ".PA", ".SW", ".MI", ".MC"]
 # ========== UTIL ==========
 
 def normalize_ticker(user_input: str) -> str:
-    """Biar rapi: uppercase & trimming. Tambah .NS kalau kamu mau default ke India."""
-    t = user_input.strip().upper()
-    # Contoh jika ingin otomatis .NS (matikan kalau tidak perlu):
-    # if '.' not in t:
-    #     t = t + ".NS"
-    return t
+    """Uppercase + trim; tidak menambah suffix di sini."""
+    return user_input.strip().upper()
+
+    
+def try_all_suffixes(ticker: str, suffixes=None):
+    """Coba ticker apa adanya, lalu semua suffix."""
+    if suffixes is None:
+        suffixes = [".JK", ".NS", ".AX", ".TO", ".L", ".HK", ".SS", ".SZ", ".TW", ".KS"]
+
+    tried = []
+
+    # 1. coba ticker original
+    try:
+        return download_one_ticker(ticker), ticker
+    except Exception as e:
+        tried.append(ticker)
+
+    # 2. coba ticker + suffix
+    for s in suffixes:
+        t = f"{ticker}{s}"
+        try:
+            return download_one_ticker(t), t
+        except Exception as e:
+            tried.append(t)
+
+    # 3. kalau semua gagal
+    raise ValueError(f"Tidak ditemukan. Dicoba: {tried}")
+
 
 def download_one_ticker(ticker: str) -> pd.DataFrame:
     """
@@ -65,7 +89,7 @@ def download_one_ticker(ticker: str) -> pd.DataFrame:
 
 # ========== VISUAL ==========
 
-def StockData(SearchResult: pd.DataFrame, ticker: str, currency_label="DOLLAR"):
+def StockData(SearchResult: pd.DataFrame, ticker: str, currency_label="$"):
     plt.figure(figsize=(10, 5))
     plt.plot(SearchResult['Date'], SearchResult['Open'], label=f'{ticker} - Open Price')
     plt.xlabel("Date")
@@ -96,7 +120,7 @@ def ROI(SearchResult: pd.DataFrame, ticker: str, max_months=None):
     """
     SIP_DAY = 30
     FX_RATE = 1         # Ubah sesuai kurs: contoh 1 INR/USD -> IDR
-    CURRENCY = "DOLLAR"
+    CURRENCY = "$"
     FIXED_AMOUNT = 1_000.0  # IDR per bulan
 
     dfp = SearchResult.copy()
@@ -208,15 +232,18 @@ def ROI(SearchResult: pd.DataFrame, ticker: str, max_months=None):
 
 # ========== MAIN ==========
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
+def main(SearchInput):
     while True:
-        raw = input("Search (contoh: AAPL atau TATAMOTORS.NS): ")
+        # raw = input("Search (contoh: AAPL atau TATAMOTORS): ")
+        raw = SearchInput
         ticker = normalize_ticker(raw)
         try:
-            SearchResult = download_one_ticker(ticker)
+            SearchResult, used_ticker = try_all_suffixes(ticker)
+            print("✅ Ketemu:", used_ticker)
             break
-        except Exception as e:
-            print(f"Error: {e}. Coba lagi.")
+        except ValueError as e:
+            print(" Error:", e)
 
     # Debug singkat:
     print(SearchResult.columns.tolist())

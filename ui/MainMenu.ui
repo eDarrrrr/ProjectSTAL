@@ -244,7 +244,7 @@ QFrame.card {
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-58</y>
+         <y>0</y>
          <width>944</width>
          <height>1312</height>
         </rect>
@@ -421,7 +421,7 @@ QFrame.card {
            <number>0</number>
           </property>
           <widget class="QWidget" name="PageDashboard">
-           <widget class="QWidget" name="">
+           <widget class="QWidget" name="layoutWidget">
             <property name="geometry">
              <rect>
               <x>9</x>
@@ -465,7 +465,7 @@ background-color: transparent;</string>
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="lineEdit">
+              <widget class="QLineEdit" name="SearchBar">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -518,7 +518,7 @@ padding-bottom: 7px;</string>
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="pushButton">
+              <widget class="QPushButton" name="SearchButton">
                <property name="minimumSize">
                 <size>
                  <width>0</width>

@@ -7,6 +7,8 @@ from PyQt5.QtGui import QCursor, QColor, QIcon
 
 import resource
 
+import Algoritm as al
+
 class loginpage(QDialog):
     def __init__(self):
         super().__init__()
@@ -35,6 +37,13 @@ class MainMenu(QMainWindow):
         self.actionExit.triggered.connect(
              lambda: self.exit()
         )
+
+        self.SearchButton.clicked.connect(self.searchbar)
+        self.SearchBar.returnPressed.connect(self.searchbar)
+
+    def searchbar(self):
+        SearchBar = self.SearchBar.text()
+        al.main(SearchBar)
          
 
 
