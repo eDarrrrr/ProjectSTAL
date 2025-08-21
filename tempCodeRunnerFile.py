@@ -1,1 +1,1 @@
-rint(SearchResult.head())
+ uic.loadUi("ui/MainMenu.ui", self)

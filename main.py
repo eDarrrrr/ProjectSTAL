@@ -4,9 +4,11 @@ from PyQt5 import uic, QtWidgets
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtGui import QCursor, QColor, QIcon
-
+import time
 
 import resource
+
+import Algoritm as al
 
 class loginpage(QDialog):
     def __init__(self):
@@ -36,6 +38,22 @@ class MainMenu(QMainWindow):
         self.actionExit.triggered.connect(
              lambda: self.exit()
         )
+
+        self.SearchButton.clicked.connect(self.searchbar)
+        self.SearchBar.returnPressed.connect(self.searchbar)
+
+    def searchbar(self):
+        SearchBar = self.SearchBar.text()
+        self.HasilSearchLabel.setText(f"Searching for: {SearchBar}")
+        QApplication.processEvents()
+
+        hasilPencarian = al.main(SearchBar)
+        self.HasilSearchLabel.setWordWrap(True)
+        if hasilPencarian[0] is "Found":
+            self.HasilSearchLabel.setText(f"Hasil pencarian ditemukan.")
+        else:
+            self.HasilSearchLabel.setText(f"{hasilPencarian}" )
+
          
 
 
