@@ -35,7 +35,7 @@ def try_all_suffixes(ticker: str, suffixes=None):
             tried.append(t)
 
     # 3. kalau semua gagal
-    raise ValueError(f"Tidak ditemukan. Dicoba: {tried}")
+    raise ValueError(f"{ticker} Tidak ditemukan.")
 
 
 def download_one_ticker(ticker: str) -> pd.DataFrame:
@@ -240,10 +240,11 @@ def main(SearchInput):
         ticker = normalize_ticker(raw)
         try:
             SearchResult, used_ticker = try_all_suffixes(ticker)
-            print("✅ Ketemu:", used_ticker)
+            print(" Ketemu:", used_ticker)
             break
         except ValueError as e:
             print(" Error:", e)
+            return f"Hasil pencarian tidak ditemukan. karena: {e}"
 
     # Debug singkat:
     print(SearchResult.columns.tolist())
@@ -253,3 +254,4 @@ def main(SearchInput):
     VolumeData(SearchResult, ticker)
     StockData(SearchResult, ticker)
     ROI(SearchResult, ticker, max_months=12)
+    return "Found", SearchResult, ticker
