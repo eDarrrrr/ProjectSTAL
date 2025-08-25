@@ -35,6 +35,20 @@
       </widget>
      </item>
      <item>
+      <widget class="QLineEdit" name="email">
+       <property name="styleSheet">
+        <string notr="true">background-color:rgba(0, 0, 0, 0);
+border:none;
+border-bottom:2px solid rgba(105, 118, 132, 255);
+color:rgba(255, 255, 255, 230);
+padding-bottom: 7px;</string>
+       </property>
+       <property name="placeholderText">
+        <string>Email</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QLineEdit" name="username">
        <property name="styleSheet">
         <string notr="true">background-color:rgba(0, 0, 0, 0);
@@ -62,39 +76,17 @@ padding-bottom: 7px;</string>
        </property>
       </widget>
      </item>
-     <item alignment="Qt::AlignHCenter">
-      <widget class="QPushButton" name="createaccount">
-       <property name="maximumSize">
-        <size>
-         <width>400</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="cursor">
-        <cursorShape>PointingHandCursor</cursorShape>
-       </property>
-       <property name="layoutDirection">
-        <enum>Qt::LeftToRight</enum>
-       </property>
+     <item>
+      <widget class="QLineEdit" name="confirmpassword">
        <property name="styleSheet">
-        <string notr="true">QPushButton {
-background-color: transparent;
+        <string notr="true">background-color:rgba(0, 0, 0, 0);
 border:none;
+border-bottom:2px solid rgba(105, 118, 132, 255);
 color:rgba(255, 255, 255, 230);
-
-}
-
-QPushButton:hover {
-    color: rgb(125, 255, 255);
-}
-
-QPushButton:pressed {
-    color: rgb(125, 230, 255);
-}
-</string>
+padding-bottom: 7px;</string>
        </property>
-       <property name="text">
-        <string>Dont have an account? Click here</string>
+       <property name="placeholderText">
+        <string>Confirm Password</string>
        </property>
       </widget>
      </item>
@@ -115,7 +107,7 @@ QPushButton:pressed {
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="loginbutton">
+      <widget class="QPushButton" name="signupbutton">
        <property name="cursor">
         <cursorShape>PointingHandCursor</cursorShape>
        </property>
@@ -144,7 +136,7 @@ QPushButton:pressed {
 </string>
        </property>
        <property name="text">
-        <string>Login</string>
+        <string>Sign Up</string>
        </property>
       </widget>
      </item>
