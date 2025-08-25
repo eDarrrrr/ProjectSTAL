@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, json
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QPushButton, QGraphicsDropShadowEffect, QDialog
 from PyQt5 import uic, QtWidgets
 from PyQt5.QtWidgets import QDialog
@@ -11,17 +11,102 @@ import resource
 
 import Algoritm as al
 
+class SignUp(QDialog):
+    def __init__(self):
+        super().__init__()
+        uic.loadUi("ui/signup.ui", self)
+        self.signupbutton.clicked.connect(self.signupfunction)
+        self.password.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.confirmpassword.setEchoMode(QtWidgets.QLineEdit.Password)
+     
+    def signupfunction(self):
+        email = self.email.text()
+        username = self.username.text()
+        password = self.password.text()
+        confirm = self.confirmpassword.text()
+        if password != confirm:
+            QMessageBox.warning(self, "Error", "Password and confirmation do not match!")
+            return
+        
+        print("Successfully registered account with email", email, "and password", password)
+
+        # File tempat simpan data user
+        filename = "users.json"
+
+        users = {}
+
+        if os.path.exists(filename):
+            with open(filename, "r") as f:
+                content = f.read().strip()   # baca isi file
+                if content:                  # kalau tidak kosong
+                    try:
+                        users = json.loads(content)
+                    except json.JSONDecodeError:
+                        users = {}
+
+        if email in users:
+            QMessageBox.warning(self, "Error", "Email have been registered!")
+            return
+        
+        for u in users.values():
+            if u["username"] == username:
+                QMessageBox.warning(self, "Error", "Username have been registered!")
+                return
+
+        # Tambah user baru
+        users[email] = {
+            "username": username,
+            "password": password
+        }
+
+        with open(filename, "w") as f:
+            json.dump(users, f, indent=4)
+
+        self.hide()
+        self.loginpage = loginpage()
+        self.loginpage.show()
+
+
+
 class loginpage(QDialog):
     def __init__(self):
         super().__init__()
         uic.loadUi("ui/loginpage.ui", self)
+        self.loginbutton.setAutoDefault(False)
+        self.loginbutton.setDefault(False)
         self.loginbutton.clicked.connect(self.loginfunction)
         self.password.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.createaccount.clicked.connect(self.gotosignup)
 
     def loginfunction(self):
-        username = self.username.text()
-        password = self.password.text()
-        print("Login success!\n username : ", username, "password : ", password)
+        username = self.username.text().strip()
+        password = self.password.text().strip()
+        
+        filename = "users.json"
+        if not os.path.exists(filename):
+            QMessageBox.warning(self, "Error", "No account registered yet!")
+            return
+
+        with open(filename, "r") as f:
+            users = json.load(f)
+
+        # cari username di dalam semua users (karena key = email)
+        for email, data in users.items():
+            if data["username"] == username and data["password"] == password:
+                print("Login success!\n username : ", username, "password : ", password)
+                QMessageBox.information(self, "Success", f"Login succesful! (Email: {email})")
+                self.accept()
+                self.mainmenu = MainMenu()
+                self.mainmenu.show()
+            else:
+                QMessageBox.warning(self, "Error", "Username or password is incorrect!")
+
+    def gotosignup(self):
+        self.hide()                     # sembunyikan login page
+        self.signup_window = SignUp()   # simpan ke atribut biar ga kehapus
+        self.signup_window.show()
+
+
 
 class MainMenu(QMainWindow):
     def __init__(self):
@@ -31,17 +116,10 @@ class MainMenu(QMainWindow):
         self.Page.setCurrentIndex(0)  # misal index dashboard itu 0
         self.autocorrectlist.hide()
 
-        df = pd.read_csv("listnasdaq.csv")
+        df = pd.read_csv("Data/listnasdaq.csv")
+        df2 = pd.read_csv("Data/DaftarSaham.csv")
         self.company = df["Symbol"].dropna().tolist()
-
-        # print(self.company[:10])
-        # self.company = [
-        #     "AAPL", "GOOGL", "AMZN", "MSFT", "TSLA",
-        #     "BABA", "NFLX", "NVDA", "META", "ADBE",
-        #     "TLKM", "BBRI", "BMRI", "BBCA"
-        # ]
-
-
+        self.company += df2["Code"].dropna().tolist()
         
         self.autocorrectlist.addItems(self.company)
 
