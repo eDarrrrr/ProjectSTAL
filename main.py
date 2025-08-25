@@ -3,8 +3,9 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QPushButton,
 from PyQt5 import uic, QtWidgets
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtCore import Qt, QSize, QTimer
-from PyQt5.QtGui import QCursor, QColor, QIcon
+from PyQt5.QtGui import QCursor, QColor, QIcon, QStandardItemModel, QStandardItem
 import time
+import pandas as pd
 
 import resource
 
@@ -111,7 +112,34 @@ class MainMenu(QMainWindow):
         uic.loadUi("ui/MainMenu.ui", self)
         self.showMaximized()
         self.Page.setCurrentIndex(0)  # misal index dashboard itu 0
+        self.autocorrectlist.hide()
 
+        df = pd.read_csv("Data/listnasdaq.csv")
+        df2 = pd.read_csv("Data/DaftarSaham.csv")
+        self.company = df["Symbol"].dropna().tolist()
+        self.company += df2["Code"].dropna().tolist()
+        
+        self.autocorrectlist.addItems(self.company)
+
+        self.autocorrectlist.setStyleSheet("""
+        QListWidget {
+            background: #242424;
+            border: none;
+        }
+        QListWidget::item {
+            color:white;
+        }
+        QListWidget::item:hover {
+            background: #151515;
+        }
+        QListWidget::item:selected {
+            background: #151515;
+            color: white;
+        }
+        """)
+        self.autocorrectlist.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.SearchBar.textChanged.connect(self._on_search_text)
+        
         self.Dashboard.clicked.connect(
             lambda: self.Page.setCurrentWidget(self.PageDashboard)
         )
@@ -124,6 +152,43 @@ class MainMenu(QMainWindow):
 
         self.SearchButton.clicked.connect(self.searchbar)
         self.SearchBar.returnPressed.connect(self.searchbar)
+
+        self.autocorrectlist.itemClicked.connect(self.on_item_clicked)
+
+
+    def on_item_clicked(self, item):
+        print("Dipilih:", item.text())
+        self.SearchBar.setText(item.text())
+        self.autocorrectlist.hide()
+
+
+    def _on_search_text(self, text: str):
+        q = text.strip()
+        lw = self.autocorrectlist
+        lw.clear()
+
+        if not q:
+            lw.hide()
+            return
+
+        # match sederhana: contains (case-insensitive)
+        matches = [c for c in self.company if q.lower() in c.lower()]
+
+        if not matches:
+            lw.hide()
+            return
+
+        # batasi jumlah yang ditampilkan (mis. 8)
+        matches = matches[:8]
+        lw.addItems(matches)
+
+        # auto tinggi agar tak perlu scrollbar
+        row_h = lw.sizeHintForRow(0) if lw.count() else 24
+        lw.setFixedHeight(min(lw.count(), 8) * row_h + 6)
+
+        # pilih baris pertama supaya Enter langsung ambil
+        lw.setCurrentRow(0)
+        lw.show()
 
     def searchbar(self):
         SearchBar = self.SearchBar.text()
