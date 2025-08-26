@@ -202,8 +202,6 @@ class MainMenu(QMainWindow):
         else:
             self.HasilSearchLabel.setText(f"{hasilPencarian}" )
 
-         
-
 
 def main():
     os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
