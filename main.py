@@ -161,7 +161,6 @@ class MainMenu(QMainWindow):
         self.SearchBar.setText(item.text())
         self.autocorrectlist.hide()
 
-
     def _on_search_text(self, text: str):
         q = text.strip()
         lw = self.autocorrectlist
@@ -195,10 +194,15 @@ class MainMenu(QMainWindow):
         self.HasilSearchLabel.setText(f"Searching for: {SearchBar}")
         QApplication.processEvents()
 
-        hasilPencarian = al.main(SearchBar)
+        try:
+            hasilPencarian = al.main(SearchBar)
+        except Exception as e:
+            self.HasilSearchLabel.setText(f"Error: {e}")
+            return
         self.HasilSearchLabel.setWordWrap(True)
-        if hasilPencarian[0] is "Found":
+        if hasilPencarian[0] == "Found":
             self.HasilSearchLabel.setText(f"Hasil pencarian ditemukan.")
+
         else:
             self.HasilSearchLabel.setText(f"{hasilPencarian}" )
 

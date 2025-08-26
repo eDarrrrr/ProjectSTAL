@@ -3,6 +3,36 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import yfinance as yf
+# ========== COMPANY PROFILE & STATISTICS ==========
+import yfinance as yf
+
+def load_company_profile_and_stats(ticker: str):
+    """Return company info and statistics as a dict."""
+    try:
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        profile = {
+            'longName': info.get('longName'),
+            'symbol': info.get('symbol'),
+            'sector': info.get('sector'),
+            'industry': info.get('industry'),
+            'country': info.get('country'),
+            'website': info.get('website'),
+            'marketCap': info.get('marketCap'),
+            'fullTimeEmployees': info.get('fullTimeEmployees'),
+            'dividendYield': info.get('dividendYield'),
+            'trailingPE': info.get('trailingPE'),
+            'forwardPE': info.get('forwardPE'),
+            'priceToBook': info.get('priceToBook'),
+            'beta': info.get('beta'),
+            '52WeekChange': info.get('52WeekChange'),
+            '52WeekHigh': info.get('fiftyTwoWeekHigh'),
+            '52WeekLow': info.get('fiftyTwoWeekLow'),
+        }
+        return profile
+    except Exception as e:
+        return {'error': str(e)}
+
 
 
 SUFFIXES = ["", ".JK", ".NS", ".BO", ".L", ".TO", ".AX", ".HK", ".T", ".SI", ".DE", ".PA", ".SW", ".MI", ".MC"]
@@ -200,6 +230,15 @@ def ROI(SearchResult: pd.DataFrame, ticker: str, max_months=None):
     print(f"ROI           : {roi_2*100:.2f}%")
     print(f"CAGR (approx) : {cagr_2*100:.2f}% / tahun")
 
+
+def print_company_profile(profile: dict):
+    if 'error' in profile:
+        print(f"Error loading company profile: {profile['error']}")
+        return
+    print("=== Company Profile & Statistics ===")
+    for k, v in profile.items():
+        print(f"{k}: {v}")
+
     # Plot harga + titik beli (IDR)
     plt.figure(figsize=(11, 5))
     plt.plot(dfp['Date'], dfp[price_ref], label=f'{ticker} {price_ref}')
@@ -299,6 +338,9 @@ def main(SearchInput):
     VolumeData(SearchResult, ticker)
     StockData(SearchResult, ticker)
     ROI(SearchResult, ticker, max_months=12)
+    # Print company profile and statistics
+    profile = load_company_profile_and_stats(ticker)
+    print_company_profile(profile)
     # Prediksi harga open 1 bulan ke depan
     predict_next_month_open_price(SearchResult)
     return "Found", SearchResult, ticker
