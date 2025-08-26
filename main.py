@@ -1,16 +1,16 @@
 import sys, os, json
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QPushButton, QGraphicsDropShadowEffect, QDialog
 from PyQt5 import uic, QtWidgets
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpacerItem, QSizePolicy
 from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtGui import QCursor, QColor, QIcon, QStandardItemModel, QStandardItem
+from PyQt5.QtCore import pyqtSignal
 import time
 import pandas as pd
 
 import resource
 
 import Algoritm as al
-from stockdata_dialog import StockDataDialog
 
 class SignUp(QDialog):
     def __init__(self):
@@ -67,6 +67,8 @@ class SignUp(QDialog):
         self.loginpage = loginpage()
         self.loginpage.show()
 
+
+
 class loginpage(QDialog):
     def __init__(self):
         super().__init__()
@@ -94,26 +96,48 @@ class loginpage(QDialog):
             if data["username"] == username and data["password"] == password:
                 print("Login success!\n username : ", username, "password : ", password)
                 QMessageBox.information(self, "Success", f"Login succesful! (Email: {email})")
+                LoginUsername = data["username"]
+                LoginEmail = email
+                LoginPassword = data["password"]
                 self.accept()
-                self.mainmenu = MainMenu()
+                self.mainmenu = MainMenu(
+                    username=LoginUsername,
+                    email=LoginEmail,
+                    password=LoginPassword
+                    )
                 self.mainmenu.show()
             else:
                 QMessageBox.warning(self, "Error", "Username or password is incorrect!")
 
+
+
     def gotosignup(self):
         self.hide()                     # sembunyikan login page
-        self.signup_window = SignUp()   # simpan ke atribut biar ga kehapus
+        self.signup_window = SignUp()   
         self.signup_window.show()
 
 
 
+class StockDataWindow(QDialog):
+    def __init__(self, stock_name="", parent=None):
+        super().__init__(parent)
+        uic.loadUi("ui/stockdata.ui", self)
+        self.setWindowTitle("Stock Data")
+        # Example: set a label if you have one in your UI
+        # self.stockNameLabel.setText(stock_name)
+        # You can add more logic here to display stock data
+
+
+
 class MainMenu(QMainWindow):
-    def __init__(self):
+    def __init__(self, username=None, email=None, password=None):
         super().__init__()
         uic.loadUi("ui/MainMenu.ui", self)
         self.showMaximized()
-        self.Page.setCurrentIndex(0)  # misal index dashboard itu 0
+        self.Page.setCurrentIndex(0)
         self.autocorrectlist.hide()
+        self.setProfile(username, email)
+
 
         df = pd.read_csv("Data/listnasdaq.csv")
         df2 = pd.read_csv("Data/DaftarSaham.csv")
@@ -121,7 +145,6 @@ class MainMenu(QMainWindow):
         self.company += df2["Code"].dropna().tolist()
         
         self.autocorrectlist.addItems(self.company)
-
         self.autocorrectlist.setStyleSheet("""
         QListWidget {
             background: #242424;
@@ -156,11 +179,18 @@ class MainMenu(QMainWindow):
 
         self.autocorrectlist.itemClicked.connect(self.on_item_clicked)
 
+        
+        self.Profile.clicked.connect(lambda: self.open_profile_dialog(username, email, password))
+        
+
+    def setProfile(self, LoginUsername, LoginEmail):
+        self.Profile.setText(LoginUsername)
 
     def on_item_clicked(self, item):
         print("Dipilih:", item.text())
         self.SearchBar.setText(item.text())
         self.autocorrectlist.hide()
+
 
     def _on_search_text(self, text: str):
         q = text.strip()
@@ -195,18 +225,120 @@ class MainMenu(QMainWindow):
         self.HasilSearchLabel.setText(f"Searching for: {SearchBar}")
         QApplication.processEvents()
 
-        try:
-            hasilPencarian = al.main(SearchBar)
-        except Exception as e:
-            self.HasilSearchLabel.setText(f"Error: {e}")
-            return
+        hasilPencarian = al.main(SearchBar)
         self.HasilSearchLabel.setWordWrap(True)
-        if isinstance(hasilPencarian, tuple) and hasilPencarian[0] == "Found":
+        if hasilPencarian[0] is "Found":
             self.HasilSearchLabel.setText(f"Hasil pencarian ditemukan.")
-            dialog = StockDataDialog(self, search_result=hasilPencarian[1], ticker=hasilPencarian[2])
-            dialog.exec_()
         else:
             self.HasilSearchLabel.setText(f"{hasilPencarian}" )
+
+        # Show the StockDataWindow popup
+        self.stock_data_window = StockDataWindow(stock_name=SearchBar, parent=self)
+        self.stock_data_window.exec_()
+
+    def open_profile_dialog(self, username, email, password):
+        dlg = ProfileDialog(
+            username=username or "",
+            email=email or "",
+            password=password or "",
+            parent=self
+        )
+        dlg.signOutRequested.connect(self._sign_out)
+        dlg.exec_()
+
+    def _sign_out(self):
+        self.close()
+        self.login_window = loginpage()
+        self.login_window.show()
+
+
+class ProfileDialog(QDialog):
+    signOutRequested = pyqtSignal()  # sinyal ke MainMenu
+
+    def __init__(self, username, email, password, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Profile")
+
+        # ukuran fix
+        self.setFixedSize(400, 350)
+
+        # style dark
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #121212;
+            }
+            QLabel {
+                color: white;
+            }
+            QLineEdit {
+                background-color: #2c2c2c;
+                color: white;
+                border: 1px solid #555;
+                border-radius: 4px;
+                padding: 2px;
+            }
+            QPushButton {
+                background-color: #333;
+                color: white;
+                border: 1px solid #555;
+                border-radius: 5px;
+                padding: 4px 8px;
+            }
+            QPushButton:hover {
+                background-color: #444;
+            }
+        """)
+
+        self.username = username
+        self.email = email
+        self._password_plain = password
+
+        lay = QVBoxLayout(self)
+
+        row1 = QHBoxLayout()
+        row1.addWidget(QLabel("Username:"))
+        self.le_user = QLineEdit(username)
+        self.le_user.setReadOnly(True)
+        row1.addWidget(self.le_user)
+        lay.addLayout(row1)
+
+        row2 = QHBoxLayout()
+        row2.addWidget(QLabel("Email:"))
+        self.le_email = QLineEdit(email)
+        self.le_email.setReadOnly(True)
+        row2.addWidget(self.le_email)
+        lay.addLayout(row2)
+
+        row3 = QHBoxLayout()
+        row3.addWidget(QLabel("Password:"))
+        self.le_pass = QLineEdit(password)
+        self.le_pass.setEchoMode(QLineEdit.Password)
+        self.le_pass.setReadOnly(True)
+        self.btn_toggle = QPushButton("Show")
+        self.btn_toggle.setCheckable(True)
+        self.btn_toggle.toggled.connect(self._toggle_password)
+        row3.addWidget(self.le_pass)
+        row3.addWidget(self.btn_toggle)
+        lay.addLayout(row3)
+
+        lay.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
+        self.btn_signout = QPushButton("Sign Out")
+        self.btn_signout.clicked.connect(self._do_signout)
+        lay.addWidget(self.btn_signout)
+
+    def _toggle_password(self, checked: bool):
+        if checked:
+            self.le_pass.setEchoMode(QLineEdit.Normal)
+            self.btn_toggle.setText("Hide")
+        else:
+            self.le_pass.setEchoMode(QLineEdit.Password)
+            self.btn_toggle.setText("Show")
+
+    def _do_signout(self):
+        # Emit sinyal ke MainMenu
+        self.signOutRequested.emit()
+        self.accept()
 
 
 def main():
@@ -227,7 +359,7 @@ def main():
         background-color: gray;
         color: white;
     }                  
-    """)    
+    """)     
     window = loginpage()
     window.show()
     app.exec()
