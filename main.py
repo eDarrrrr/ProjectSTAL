@@ -10,6 +10,7 @@ import pandas as pd
 import resource
 
 import Algoritm as al
+from stockdata_dialog import StockDataDialog
 
 class SignUp(QDialog):
     def __init__(self):
@@ -200,9 +201,10 @@ class MainMenu(QMainWindow):
             self.HasilSearchLabel.setText(f"Error: {e}")
             return
         self.HasilSearchLabel.setWordWrap(True)
-        if hasilPencarian[0] == "Found":
+        if isinstance(hasilPencarian, tuple) and hasilPencarian[0] == "Found":
             self.HasilSearchLabel.setText(f"Hasil pencarian ditemukan.")
-
+            dialog = StockDataDialog(self, search_result=hasilPencarian[1], ticker=hasilPencarian[2])
+            dialog.exec_()
         else:
             self.HasilSearchLabel.setText(f"{hasilPencarian}" )
 
