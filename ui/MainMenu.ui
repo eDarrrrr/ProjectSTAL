@@ -193,6 +193,47 @@ QToolButton:pressed {
          </property>
         </spacer>
        </item>
+       <item alignment="Qt::AlignVCenter">
+        <widget class="QPushButton" name="Profile">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>64</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+background-color: #212121;
+text-align: left;
+padding-left: 4px;
+border-radius: 16px;
+color: #ffffff;
+}
+
+QPushButton:hover {
+    background-color: #2a2a2a;
+}
+
+QPushButton:pressed {
+    background-color: #303030;
+}
+</string>
+         </property>
+         <property name="text">
+          <string>Unknown</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../resource.qrc">
+           <normaloff>:/asset/assets/profile image.png</normaloff>:/asset/assets/profile image.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>50</width>
+           <height>50</height>
+          </size>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>
