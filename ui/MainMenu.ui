@@ -285,7 +285,7 @@ QFrame.card {
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-314</y>
+         <y>-154</y>
          <width>1089</width>
          <height>1372</height>
         </rect>
@@ -640,7 +640,7 @@ color: rgb(255, 255, 255);</string>
             <property name="geometry">
              <rect>
               <x>0</x>
-              <y>151</y>
+              <y>181</y>
               <width>471</width>
               <height>332</height>
              </rect>
@@ -650,7 +650,7 @@ color: rgb(255, 255, 255);</string>
             <property name="geometry">
              <rect>
               <x>520</x>
-              <y>150</y>
+              <y>180</y>
               <width>471</width>
               <height>332</height>
              </rect>
@@ -660,7 +660,7 @@ color: rgb(255, 255, 255);</string>
             <property name="geometry">
              <rect>
               <x>0</x>
-              <y>110</y>
+              <y>140</y>
               <width>431</width>
               <height>41</height>
              </rect>
@@ -676,7 +676,7 @@ color: rgb(255, 255, 255);</string>
             <property name="geometry">
              <rect>
               <x>520</x>
-              <y>110</y>
+              <y>140</y>
               <width>461</width>
               <height>41</height>
              </rect>
@@ -692,7 +692,7 @@ color: rgb(255, 255, 255);</string>
             <property name="geometry">
              <rect>
               <x>360</x>
-              <y>126</y>
+              <y>156</y>
               <width>111</width>
               <height>20</height>
              </rect>
@@ -708,7 +708,7 @@ color: rgb(255, 255, 255);</string>
             <property name="geometry">
              <rect>
               <x>880</x>
-              <y>119</y>
+              <y>149</y>
               <width>111</width>
               <height>31</height>
              </rect>
@@ -720,6 +720,22 @@ color: rgb(255, 255, 255);</string>
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Updated Aug 26, 2025&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
            </widget>
+           <widget class="QLabel" name="label">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>90</y>
+              <width>991</width>
+              <height>51</height>
+             </rect>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);</string>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;From 100 most populer NASDAQ stock&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
            <zorder>layoutWidget</zorder>
            <zorder>layoutWidget</zorder>
            <zorder>TopGainers</zorder>
@@ -729,6 +745,7 @@ color: rgb(255, 255, 255);</string>
            <zorder>autocorrectlist</zorder>
            <zorder>datUpdated</zorder>
            <zorder>datUpdated_2</zorder>
+           <zorder>label</zorder>
           </widget>
           <widget class="QWidget" name="PageAbout">
            <property name="minimumSize">
