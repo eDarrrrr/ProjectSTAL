@@ -1,12 +1,16 @@
 import sys, os, json
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QPushButton, QGraphicsDropShadowEffect, QDialog
 from PyQt5 import uic, QtWidgets
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpacerItem, QSizePolicy
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView
 from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtGui import QCursor, QColor, QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import pyqtSignal
+
 import time
 import pandas as pd
+import yfinance as yf
+from pathlib import Path
+from datetime import datetime
 
 import resource
 
@@ -137,12 +141,19 @@ class MainMenu(QMainWindow):
         self.Page.setCurrentIndex(0)
         self.autocorrectlist.hide()
         self.setProfile(username, email)
+        self.currency = "$"
 
+        self.TopGainers.itemDoubleClicked.connect(lambda _: self._apply_selected(self.TopGainers))
+        self.TopLosers.itemDoubleClicked.connect(lambda _: self._apply_selected(self.TopLosers))
 
         df = pd.read_csv("Data/listnasdaq.csv")
         df2 = pd.read_csv("Data/DaftarSaham.csv")
         self.company = df["Symbol"].dropna().tolist()
         self.company += df2["Code"].dropna().tolist()
+
+        self.symbol_name_map = self._load_symbol_name_map([
+            "Data/listnasdaq.csv",     
+        ])
         
         self.autocorrectlist.addItems(self.company)
         self.autocorrectlist.setStyleSheet("""
@@ -161,6 +172,51 @@ class MainMenu(QMainWindow):
             color: white;
         }
         """)
+
+        table_style = """
+        QTableWidget {
+            background-color: #1e1e1e;
+            color: white;
+            gridline-color: #444;
+            border: 1px solid #444;
+            selection-background-color: #0078d7;
+            selection-color: white;
+        }
+
+        QHeaderView::section {
+            background-color: #2d2d2d;
+            color: white;
+            padding: 4px;
+            border: 1px solid #444;
+        }
+
+        QTableWidget::item {
+            padding: 4px;
+        }
+
+        QTableWidget::item:selected {
+            background-color: #0078d7;
+            color: white;
+        }
+        """
+
+        style_gainers = """
+        QTableWidget { background:#1e1e1e; color:white; gridline-color:#444; border:1px solid #444; }
+        QHeaderView::section { background:#2d2d2d; color:white; border:1px solid #444; padding:4px; }
+        QTableWidget::item { padding:4px; }
+        QTableWidget::item:selected { background:#1e3b1e; color:white; }  /* hijau gelap */
+        """
+        style_losers = """
+        QTableWidget { background:#1e1e1e; color:white; gridline-color:#444; border:1px solid #444; }
+        QHeaderView::section { background:#2d2d2d; color:white; border:1px solid #444; padding:4px; }
+        QTableWidget::item { padding:4px; }
+        QTableWidget::item:selected { background:#3b1e1e; color:white; }  /* merah gelap */
+        """
+        
+        self.TopGainers.setStyleSheet(style_gainers)
+        self.TopLosers.setStyleSheet(style_losers)
+
+
         self.autocorrectlist.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.SearchBar.textChanged.connect(self._on_search_text)
         
@@ -251,6 +307,175 @@ class MainMenu(QMainWindow):
         self.login_window = loginpage()
         self.login_window.show()
 
+    def get_top_movers(self, tickers, n=10, period="5d"):
+        data = yf.download(
+            tickers,
+            period=period,
+            group_by="column",
+            auto_adjust=False,
+            progress=False,
+            threads=True,
+        )
+        if data.empty:
+            raise ValueError("Data kosong dari yfinance.")
+
+        # pilih harga: pakai Adj Close kalau ada, else Close
+        def pick_price_frame(df):
+            if isinstance(df.columns, pd.MultiIndex):
+                lvl0 = df.columns.get_level_values(0)
+                if "Adj Close" in lvl0:
+                    return df["Adj Close"]
+                elif "Close" in lvl0:
+                    return df["Close"]
+                else:
+                    raise KeyError("Tidak ada 'Adj Close' / 'Close'.")
+            else:
+                if "Adj Close" in df.columns:
+                    return df["Adj Close"].to_frame(name="Price")
+                elif "Close" in df.columns:
+                    return df["Close"].to_frame(name="Price")
+                else:
+                    raise KeyError("Tidak ada 'Adj Close' / 'Close'.")
+
+        px = pick_price_frame(data).dropna(how="all")
+        if len(px.index) < 2:
+            raise ValueError("Butuh >= 2 hari data untuk hitung perubahan.")
+        
+        last_ts = px.index[-1]                   # pandas Timestamp
+        try:
+            # yfinance biasanya UTC-naive; jadikan ET biar sama seperti Yahoo Finance
+            last_et_date = last_ts.tz_localize("UTC").tz_convert("US/Eastern").date()
+        except Exception:
+            # kalau sudah tz-aware atau gagal konversi, ambil .date() saja
+            last_et_date = last_ts.date()
+
+        # format: "Updated Aug 25, 2025"
+        updated_text = f"Updated {last_et_date.strftime('%b %d, %Y')}"
+
+        # set ke label di UI (pastikan objectName tepat: datUpdated)
+        if hasattr(self, "datUpdated"):
+            self.datUpdated.setText(updated_text)
+            self.datUpdated_2.setText(updated_text)
+        last_local = pd.Timestamp(last_ts).to_pydatetime()
+        self.datUpdated.setText(f"Updated {last_local.strftime('%b %d, %Y')}")
+        self.datUpdated_2.setText(f"Updated {last_local.strftime('%b %d, %Y')}")
+
+        last = px.iloc[-1]
+        prev = px.iloc[-2]
+
+        # normalisasi ke DataFrame
+        if isinstance(last, pd.Series) and last.ndim == 1 and not isinstance(last.index, pd.MultiIndex):
+            df = pd.DataFrame({
+                "Symbol": last.index.astype(str),
+                "Price": last.values.astype(float),
+                "Change %": ((last.values - prev.values) / prev.values * 100.0)
+            })
+        else:
+            df = pd.DataFrame({"Price": last}).reset_index()
+            df.rename(columns={"level_0": "Field", "level_1": "Symbol"}, inplace=True)
+            df = df[df["Field"].isin(["Adj Close","Close"])]
+            df = df[["Symbol","Price"]].drop_duplicates("Symbol").set_index("Symbol")
+            prev_df = pd.DataFrame({"Prev": prev}).reset_index()
+            prev_df.rename(columns={"level_0": "Field", "level_1": "Symbol"}, inplace=True)
+            prev_df = prev_df[prev_df["Field"].isin(["Adj Close","Close"])]
+            prev_df = prev_df[["Symbol","Prev"]].drop_duplicates("Symbol").set_index("Symbol")
+            df = df.join(prev_df, how="inner")
+            df["Change %"] = (df["Price"] - df["Prev"]) / df["Prev"] * 100.0
+            df = df.reset_index()
+
+        df = df.dropna(subset=["Change %"]).sort_values("Change %", ascending=False)
+
+        # ambil top gainers & losers
+        top_gainers = df.head(n).reset_index(drop=True)
+        top_losers  = df.tail(n).reset_index(drop=True)
+
+        # === Tambahkan kolom Name ===
+        top_gainers["Name"] = top_gainers["Symbol"].map(self.symbol_name_map).fillna("")
+        top_losers["Name"]  = top_losers["Symbol"].map(self.symbol_name_map).fillna("")
+
+        # atur urutan kolom
+        top_gainers = top_gainers[["Symbol", "Name", "Price", "Change %"]]
+        top_losers  = top_losers[["Symbol", "Name", "Price", "Change %"]]
+
+        return top_gainers, top_losers
+
+    # --- Helper isi QTableWidget dari DataFrame ---
+    def _fill_table_from_df(self, table, df: pd.DataFrame, columns=("Symbol","Name","Price","Change %"), is_gainer=True):
+        table.clear()
+        table.setColumnCount(len(columns))
+        table.setHorizontalHeaderLabels(columns)
+        table.setRowCount(len(df))
+        table.verticalHeader().setVisible(False)
+
+        for r, (_, row) in enumerate(df.iterrows()):
+            for c, col in enumerate(columns):
+                val = row[col]
+                if col == "Change %":
+                    text = f"{val:+.2f}%"
+                elif col == "Price":
+                    text = f"{val:,.2f} {self.currency}"
+                else:
+                    text = str(val)
+
+                item = QTableWidgetItem(text)
+
+                # kalau kolom Change %
+                if col == "Change %":
+                    if val >= 0:
+                        item.setForeground(QColor("lime"))   # hijau utk positif
+                    else:
+                        item.setForeground(QColor("red"))    # merah utk negatif
+                    item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+                elif col == "Price":
+                    item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+                table.setItem(r, c, item)
+
+        header = table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+        table.setEditTriggers(table.NoEditTriggers)
+        table.setSelectionBehavior(table.SelectRows)
+        table.setSelectionMode(table.SingleSelection)
+
+    # --- Load & tampilkan ke 2 tabel ---
+    def load_top_movers_into_tables(self, tickers, n=10):
+        try:
+            gainers, losers = self.get_top_movers(tickers, n=10)
+        except Exception as e:
+            # kalau gagal, kosongkan tabel & bisa tampilkan pesan
+            self.TopGainers.setRowCount(0)
+            self.TopLosers.setRowCount(0)
+            print("Gagal ambil top movers:", e)
+            return
+
+        self._fill_table_from_df(self.TopGainers, gainers)
+        self._fill_table_from_df(self.TopLosers, losers)
+    
+    def _load_symbol_name_map(self, csv_files):
+        try:
+            dfs = []
+            for p in csv_files:
+                p = Path(p)
+                if p.exists():
+                    # pastikan kolom yang dipakai ada
+                    df = pd.read_csv(p, usecols=["Symbol", "Company Name"])
+                    dfs.append(df)
+            if not dfs:
+                return {}
+            df_all = pd.concat(dfs, ignore_index=True)
+            df_all = df_all.dropna(subset=["Symbol"]).drop_duplicates("Symbol")
+            return dict(zip(df_all["Symbol"], df_all["Company Name"]))
+        except Exception as e:
+            print("Gagal load symbol_name_map:", e)
+            return {}
+        
+    def _apply_selected(self, table):
+        row = table.currentRow()
+        if row < 0: return
+        sym = table.item(row, 0).text()  # kolom 0 = Symbol
+        if hasattr(self, "SearchBar"):
+            self.SearchBar.setText(sym)
 
 class ProfileDialog(QDialog):
     signOutRequested = pyqtSignal()  # sinyal ke MainMenu
@@ -359,10 +584,44 @@ def main():
         background-color: gray;
         color: white;
     }                  
-    """)     
-    window = loginpage()
+    """)
+
+    tickers = [
+        "AAPL", "MSFT", "AMZN", "NVDA", "META",
+        "GOOGL", "GOOG", "TSLA", "PEP", "COST",
+        "AVGO", "ADBE", "NFLX", "AMD", "CSCO",
+        "INTC", "QCOM", "TXN", "AMGN", "SBUX",
+        "INTU", "HON", "AMAT", "PDD", "BKNG",
+        "CHTR", "ADP", "MU", "MDLZ", "LRCX",
+        "REGN", "GILD", "VRTX", "ISRG", "CSX",
+        "PANW", "MAR", "ABNB", "FTNT", "MRVL",
+        "KLAC", "SNPS", "CDNS", "KDP", "MELI",
+        "CRWD", "MNST", "ADI", "ORLY", "NXPI",
+        "CTAS", "ODFL", "ROP", "PAYX", "TEAM",
+        "WDAY", "XEL", "PCAR", "IDXX", "CTSH",
+        "CPRT", "DLTR", "EXC", "AEP", "CEG",
+        "MRNA", "DXCM", "ZS", "CSGP", "LCID",
+        "SPLK", "VRSK", "ROST", "KHC", "ALGN",
+        "BIDU", "EBAY", "DDOG", "ANSS", "NTES",
+        "CHKP", "VERX", "PDD", "BIIB", "DOCU",
+        "ZM", "OKTA", "SIRI", "LULU", "JD",
+        "PYPL", "VRSN", "FAST", "CTLT", "SGEN",
+        "CDW", "AZN", "WDAY", "ZS", "CRWD",
+        "MCHP", "SWKS", "MTCH", "INCY", "CSIQ"
+    ]
+
+    window = MainMenu()
+    gainers, losers = window.get_top_movers(tickers, n=10)
+    window.load_top_movers_into_tables(tickers, n=5)
+    
+    print("=== Top Gainers ===")
+    print(gainers)
+    print("\n=== Top Losers ===")
+    print(losers)
+
     window.show()
     app.exec()
+
 
 if __name__ == "__main__":
     main()
