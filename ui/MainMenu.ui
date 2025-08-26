@@ -285,9 +285,9 @@ QFrame.card {
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>0</y>
-         <width>1086</width>
-         <height>1324</height>
+         <y>-314</y>
+         <width>1089</width>
+         <height>1372</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="contentLayout">
@@ -452,14 +452,14 @@ QFrame.card {
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>0</height>
+            <height>600</height>
            </size>
           </property>
           <property name="styleSheet">
            <string notr="true">background-color: transparent;</string>
           </property>
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="PageDashboard">
            <widget class="QWidget" name="layoutWidget">
@@ -636,6 +636,99 @@ color: rgb(255, 255, 255);</string>
              <enum>QListView::ListMode</enum>
             </property>
            </widget>
+           <widget class="QTableWidget" name="TopGainers">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>151</y>
+              <width>471</width>
+              <height>332</height>
+             </rect>
+            </property>
+           </widget>
+           <widget class="QTableWidget" name="TopLosers">
+            <property name="geometry">
+             <rect>
+              <x>520</x>
+              <y>150</y>
+              <width>471</width>
+              <height>332</height>
+             </rect>
+            </property>
+           </widget>
+           <widget class="QLabel" name="TopGainersLabel">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>110</y>
+              <width>431</width>
+              <height>41</height>
+             </rect>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);</string>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;Top 10 Gainers&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+           <widget class="QLabel" name="TopGainersLabel_2">
+            <property name="geometry">
+             <rect>
+              <x>520</x>
+              <y>110</y>
+              <width>461</width>
+              <height>41</height>
+             </rect>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);</string>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;Top 10 Losers&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+           <widget class="QLabel" name="datUpdated">
+            <property name="geometry">
+             <rect>
+              <x>360</x>
+              <y>126</y>
+              <width>111</width>
+              <height>20</height>
+             </rect>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);</string>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Date updated&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+           <widget class="QLabel" name="datUpdated_2">
+            <property name="geometry">
+             <rect>
+              <x>880</x>
+              <y>119</y>
+              <width>111</width>
+              <height>31</height>
+             </rect>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);</string>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Updated Aug 26, 2025&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+           <zorder>layoutWidget</zorder>
+           <zorder>layoutWidget</zorder>
+           <zorder>TopGainers</zorder>
+           <zorder>TopLosers</zorder>
+           <zorder>TopGainersLabel</zorder>
+           <zorder>TopGainersLabel_2</zorder>
+           <zorder>autocorrectlist</zorder>
+           <zorder>datUpdated</zorder>
+           <zorder>datUpdated_2</zorder>
           </widget>
           <widget class="QWidget" name="PageAbout">
            <property name="minimumSize">
@@ -711,7 +804,7 @@ border-radius: 25px;</string>
           <property name="sizeHint" stdset="0">
            <size>
             <width>20</width>
-            <height>400</height>
+            <height>200</height>
            </size>
           </property>
          </spacer>
@@ -739,7 +832,7 @@ color: rgb(255, 255, 255);</string>
      <x>0</x>
      <y>0</y>
      <width>1376</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFIle">
