@@ -244,9 +244,9 @@ QFrame.card {
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-233</y>
-         <width>1089</width>
-         <height>1312</height>
+         <y>0</y>
+         <width>1086</width>
+         <height>1324</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="contentLayout">
@@ -418,7 +418,7 @@ QFrame.card {
            <string notr="true">background-color: transparent;</string>
           </property>
           <property name="currentIndex">
-           <number>0</number>
+           <number>1</number>
           </property>
           <widget class="QWidget" name="PageDashboard">
            <widget class="QWidget" name="layoutWidget">
@@ -650,7 +650,7 @@ background: #323232;
 border-radius: 25px;</string>
             </property>
             <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:12pt; font-weight:600;&quot;&gt;About STAL&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Version:&lt;/span&gt; 1.0.0&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Description:&lt;/span&gt; STAL (Stock Analyzer) adalah aplikasi analisis saham berbasis Python dan PyQt5 yang&lt;br/&gt;membantu investor memahami tren pasar melalui visualisasi data yang intuitif.&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Developer:&lt;/span&gt; Kelompok 5&lt;br/&gt;- Muhammad Haidar Al Ghifari&lt;br/&gt;- Rania Maryam Muthmainah&lt;br/&gt;- Fathih&lt;br/&gt;- Leslie&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Contact us:&lt;/span&gt; line: hdrghif (Haidar)&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;About STAL&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Version:&lt;/span&gt; 1.0.0&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Description:&lt;/span&gt; STAL (Stock Analyzer) adalah aplikasi analisis saham berbasis Python dan PyQt5 yang&lt;br/&gt;membantu investor memahami tren pasar melalui visualisasi data yang intuitif.&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Developer:&lt;/span&gt; Kelompok 5&lt;br/&gt;- Muhammad Haidar Al Ghifari&lt;br/&gt;- Rania Maryam Muthmainah&lt;br/&gt;- Fathih Rayyandra Firmansyah&lt;br/&gt;- Leslie&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Contact us:&lt;/span&gt; line: hdrghif (Haidar)&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="textFormat">
              <enum>Qt::RichText</enum>
@@ -698,7 +698,7 @@ color: rgb(255, 255, 255);</string>
      <x>0</x>
      <y>0</y>
      <width>1376</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFIle">

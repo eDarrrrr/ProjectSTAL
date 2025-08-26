@@ -230,6 +230,51 @@ def ROI(SearchResult: pd.DataFrame, ticker: str, max_months=None):
     plt.tight_layout()
     plt.show()
 
+def predict_next_month_open_price(SearchResult: pd.DataFrame):
+    """
+    Prediksi harga open untuk 30 hari ke depan menggunakan regresi linear
+    berdasarkan 30 hari harga open terakhir, hanya dengan numpy.
+    """
+    df = SearchResult.copy()
+    df = df.sort_values('Date').reset_index(drop=True)
+    if len(df) < 30:
+        print("Data kurang dari 30 hari, prediksi tidak dapat dilakukan.")
+        return None
+
+    # Ambil 30 hari terakhir
+    last_30 = df.tail(30)
+    X = np.arange(30)  # Hari ke-0 sampai ke-29
+    y = last_30['Open'].values
+
+    # Regresi linear manual: y = a*X + b
+    A = np.vstack([X, np.ones(len(X))]).T
+    a, b = np.linalg.lstsq(A, y, rcond=None)[0]
+
+    # Prediksi 30 hari ke depan (hari ke-30 sampai ke-59)
+    X_future = np.arange(30, 60)
+    y_pred = a * X_future + b
+
+    # Buat tanggal prediksi
+    last_date = last_30['Date'].iloc[-1]
+    future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=30, freq='B')  # hari kerja
+
+    # Plot hasil prediksi
+    plt.figure(figsize=(10, 5))
+    plt.plot(last_30['Date'], last_30['Open'], label='Open Price (Last 30 days)')
+    plt.plot(future_dates, y_pred, label='Predicted Open Price (Next 30 days)', linestyle='--')
+    plt.xlabel("Date")
+    plt.ylabel("Open Price")
+    plt.title("Prediksi Harga Open 30 Hari ke Depan (Regresi Linear, Numpy)")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    # Tampilkan prediksi hari pertama dan terakhir
+    print(f"Prediksi harga open 1 hari ke depan: {y_pred[0]:,.2f}")
+    print(f"Prediksi harga open 30 hari ke depan: {y_pred[-1]:,.2f}")
+
+    return future_dates, y_pred
+
 # ========== MAIN ==========
 
 # if __name__ == "__main__":
@@ -254,4 +299,6 @@ def main(SearchInput):
     VolumeData(SearchResult, ticker)
     StockData(SearchResult, ticker)
     ROI(SearchResult, ticker, max_months=12)
+    # Prediksi harga open 1 bulan ke depan
+    predict_next_month_open_price(SearchResult)
     return "Found", SearchResult, ticker
