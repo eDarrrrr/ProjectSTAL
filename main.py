@@ -118,6 +118,17 @@ class loginpage(QDialog):
 
 
 
+class StockDataWindow(QDialog):
+    def __init__(self, stock_name="", parent=None):
+        super().__init__(parent)
+        uic.loadUi("ui/stockdata.ui", self)
+        self.setWindowTitle("Stock Data")
+        # Example: set a label if you have one in your UI
+        # self.stockNameLabel.setText(stock_name)
+        # You can add more logic here to display stock data
+
+
+
 class MainMenu(QMainWindow):
     def __init__(self, username=None, email=None, password=None):
         super().__init__()
@@ -220,6 +231,10 @@ class MainMenu(QMainWindow):
             self.HasilSearchLabel.setText(f"Hasil pencarian ditemukan.")
         else:
             self.HasilSearchLabel.setText(f"{hasilPencarian}" )
+
+        # Show the StockDataWindow popup
+        self.stock_data_window = StockDataWindow(stock_name=SearchBar, parent=self)
+        self.stock_data_window.exec_()
 
     def open_profile_dialog(self, username, email, password):
         dlg = ProfileDialog(
