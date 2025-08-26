@@ -331,7 +331,20 @@ def main():
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
     os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
     app = QApplication(sys.argv)
-    app.setStyle("Fusion")    
+    app.setStyle("Fusion")
+    app.setStyleSheet("""
+    QMessageBox QLabel { color: white; }
+    QMessageBox QPushButton { color: white; 
+        background-color: white;
+        }
+    QMessageBox QPushButton:hover {
+        background-color: lightgray;
+    }
+    QMessageBox QPushButton:pressed {
+        background-color: gray;
+        color: white;
+    }                  
+    """)     
     window = loginpage()
     window.show()
     app.exec()
