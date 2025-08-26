@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="asset">
+    <file>assets/profile image.png</file>
     <file>assets/Search Logo.png</file>
     <file>assets/ArrowLeft.png</file>
     <file>assets/Logo (1) cropped.png</file>

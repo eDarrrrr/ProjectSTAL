@@ -1,1 +1,1 @@
- uic.loadUi("ui/MainMenu.ui", self)
+self.Profile.setText(f"{LoginUsername}")

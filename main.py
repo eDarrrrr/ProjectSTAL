@@ -1,9 +1,10 @@
 import sys, os, json
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QPushButton, QGraphicsDropShadowEffect, QDialog
 from PyQt5 import uic, QtWidgets
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpacerItem, QSizePolicy
 from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtGui import QCursor, QColor, QIcon, QStandardItemModel, QStandardItem
+from PyQt5.QtCore import pyqtSignal
 import time
 import pandas as pd
 
@@ -95,26 +96,37 @@ class loginpage(QDialog):
             if data["username"] == username and data["password"] == password:
                 print("Login success!\n username : ", username, "password : ", password)
                 QMessageBox.information(self, "Success", f"Login succesful! (Email: {email})")
+                LoginUsername = data["username"]
+                LoginEmail = email
+                LoginPassword = data["password"]
                 self.accept()
-                self.mainmenu = MainMenu()
+                self.mainmenu = MainMenu(
+                    username=LoginUsername,
+                    email=LoginEmail,
+                    password=LoginPassword
+                    )
                 self.mainmenu.show()
             else:
                 QMessageBox.warning(self, "Error", "Username or password is incorrect!")
 
+
+
     def gotosignup(self):
         self.hide()                     # sembunyikan login page
-        self.signup_window = SignUp()   # simpan ke atribut biar ga kehapus
+        self.signup_window = SignUp()   
         self.signup_window.show()
 
 
 
 class MainMenu(QMainWindow):
-    def __init__(self):
+    def __init__(self, username=None, email=None, password=None):
         super().__init__()
         uic.loadUi("ui/MainMenu.ui", self)
         self.showMaximized()
-        self.Page.setCurrentIndex(0)  # misal index dashboard itu 0
+        self.Page.setCurrentIndex(0)
         self.autocorrectlist.hide()
+        self.setProfile(username, email)
+
 
         df = pd.read_csv("Data/listnasdaq.csv")
         df2 = pd.read_csv("Data/DaftarSaham.csv")
@@ -122,7 +134,6 @@ class MainMenu(QMainWindow):
         self.company += df2["Code"].dropna().tolist()
         
         self.autocorrectlist.addItems(self.company)
-
         self.autocorrectlist.setStyleSheet("""
         QListWidget {
             background: #242424;
@@ -157,6 +168,12 @@ class MainMenu(QMainWindow):
 
         self.autocorrectlist.itemClicked.connect(self.on_item_clicked)
 
+        
+        self.Profile.clicked.connect(lambda: self.open_profile_dialog(username, email, password))
+        
+
+    def setProfile(self, LoginUsername, LoginEmail):
+        self.Profile.setText(LoginUsername)
 
     def on_item_clicked(self, item):
         print("Dipilih:", item.text())
@@ -204,7 +221,109 @@ class MainMenu(QMainWindow):
         else:
             self.HasilSearchLabel.setText(f"{hasilPencarian}" )
 
-         
+    def open_profile_dialog(self, username, email, password):
+        dlg = ProfileDialog(
+            username=username or "",
+            email=email or "",
+            password=password or "",
+            parent=self
+        )
+        dlg.signOutRequested.connect(self._sign_out)
+        dlg.exec_()
+
+    def _sign_out(self):
+        self.close()
+        self.login_window = loginpage()
+        self.login_window.show()
+
+
+class ProfileDialog(QDialog):
+    signOutRequested = pyqtSignal()  # sinyal ke MainMenu
+
+    def __init__(self, username, email, password, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Profile")
+
+        # ukuran fix
+        self.setFixedSize(400, 350)
+
+        # style dark
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #121212;
+            }
+            QLabel {
+                color: white;
+            }
+            QLineEdit {
+                background-color: #2c2c2c;
+                color: white;
+                border: 1px solid #555;
+                border-radius: 4px;
+                padding: 2px;
+            }
+            QPushButton {
+                background-color: #333;
+                color: white;
+                border: 1px solid #555;
+                border-radius: 5px;
+                padding: 4px 8px;
+            }
+            QPushButton:hover {
+                background-color: #444;
+            }
+        """)
+
+        self.username = username
+        self.email = email
+        self._password_plain = password
+
+        lay = QVBoxLayout(self)
+
+        row1 = QHBoxLayout()
+        row1.addWidget(QLabel("Username:"))
+        self.le_user = QLineEdit(username)
+        self.le_user.setReadOnly(True)
+        row1.addWidget(self.le_user)
+        lay.addLayout(row1)
+
+        row2 = QHBoxLayout()
+        row2.addWidget(QLabel("Email:"))
+        self.le_email = QLineEdit(email)
+        self.le_email.setReadOnly(True)
+        row2.addWidget(self.le_email)
+        lay.addLayout(row2)
+
+        row3 = QHBoxLayout()
+        row3.addWidget(QLabel("Password:"))
+        self.le_pass = QLineEdit(password)
+        self.le_pass.setEchoMode(QLineEdit.Password)
+        self.le_pass.setReadOnly(True)
+        self.btn_toggle = QPushButton("Show")
+        self.btn_toggle.setCheckable(True)
+        self.btn_toggle.toggled.connect(self._toggle_password)
+        row3.addWidget(self.le_pass)
+        row3.addWidget(self.btn_toggle)
+        lay.addLayout(row3)
+
+        lay.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
+        self.btn_signout = QPushButton("Sign Out")
+        self.btn_signout.clicked.connect(self._do_signout)
+        lay.addWidget(self.btn_signout)
+
+    def _toggle_password(self, checked: bool):
+        if checked:
+            self.le_pass.setEchoMode(QLineEdit.Normal)
+            self.btn_toggle.setText("Hide")
+        else:
+            self.le_pass.setEchoMode(QLineEdit.Password)
+            self.btn_toggle.setText("Show")
+
+    def _do_signout(self):
+        # Emit sinyal ke MainMenu
+        self.signOutRequested.emit()
+        self.accept()
 
 
 def main():
@@ -213,7 +332,7 @@ def main():
     os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
     app = QApplication(sys.argv)
     app.setStyle("Fusion")    
-    window = MainMenu()
+    window = loginpage()
     window.show()
     app.exec()
 
