@@ -1,0 +1,1 @@
+self.Profile.setText(f"{LoginUsername}")
