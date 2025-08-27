@@ -5,6 +5,14 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 
 
+# Data visualized with matplotlib in this module:
+# - Stock Open price chart (last year)
+# - Stock Volume chart (all available data)
+# - ROI/SIP simulation: price chart with buy points (monthly), equity curve (portfolio value over time)
+# - Predicted Open price for next 30 days (regression line)
+# (All plots are generated using matplotlib)
+
+
 SUFFIXES = ["", ".JK", ".NS", ".BO", ".L", ".TO", ".AX", ".HK", ".T", ".SI", ".DE", ".PA", ".SW", ".MI", ".MC"]
 # ========== UTIL ==========
 
@@ -315,7 +323,45 @@ def display_company_profile_and_stats(ticker: str):
     except Exception as e:
         print(f"Could not fetch company profile/statistics: {e}")
 
-# if __name__ == "__main__":
+def plot_quarterly_revenue_last_5_years(ticker: str):
+    """
+    Fetch and plot quarterly revenue for the last 5 years (20 quarters) using yfinance.
+    """
+    try:
+        yf_ticker = yf.Ticker(ticker)
+        # yfinance quarterly financials: columns are quarters (YYYY-MM-DD)
+        income_stmt = getattr(yf_ticker, "quarterly_income_stmt", None)
+        if income_stmt is None or income_stmt.empty:
+            income_stmt = getattr(yf_ticker, "quarterly_financials", None)
+        if income_stmt is None or income_stmt.empty:
+            print("Tidak ada data revenue (quarterly income statement) untuk ticker ini.")
+            return
+        # Revenue row: 'Total Revenue' or 'TotalRevenue'
+        for rev_key in ['Total Revenue', 'TotalRevenue', 'totalRevenue']:
+            if rev_key in income_stmt.index:
+                revenue_row = income_stmt.loc[rev_key]
+                break
+        else:
+            print("Tidak ada data revenue (Total Revenue) di quarterly income statement.")
+            return
+        # Sort by date ascending, take last 20 quarters (5 years)
+        revenue_row = revenue_row.sort_index(ascending=True)
+        quarters = [str(d)[:7] for d in revenue_row.index][-20:]
+        revenues = revenue_row.values[-20:]
+        plt.figure(figsize=(14, 5))
+        plt.bar(quarters, revenues, color="#2eb11f")
+        plt.xlabel("Quarter")
+        plt.ylabel("Revenue")
+        plt.title(f"Quarterly Revenue for {ticker} (Last 5 Years)")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
+        # Print revenue values
+        for q, r in zip(quarters, revenues):
+            print(f"Revenue {q}: {r:,.0f}")
+    except Exception as e:
+        print(f"Could not fetch or plot quarterly revenue data: {e}")
+
 def main(SearchInput):
     while True:
         # raw = input("Search (contoh: AAPL atau TATAMOTORS): ")
@@ -341,4 +387,6 @@ def main(SearchInput):
     display_company_profile_and_stats(used_ticker)
     # Prediksi harga open 1 bulan ke depan
     predict_next_month_open_price(SearchResult)
+    # Plot quarterly revenue for the last 5 years
+    plot_quarterly_revenue_last_5_years(used_ticker)
     return "Found", SearchResult, ticker
