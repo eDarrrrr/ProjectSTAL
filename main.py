@@ -890,7 +890,7 @@ def main():
     }                  
     """)
 
-    window = loginpage()
+    window = MainMenu()
 
     window.show()
     app.exec()
