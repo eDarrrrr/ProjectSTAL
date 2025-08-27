@@ -128,7 +128,7 @@
     <widget class="QWidget" name="verticalLayoutWidget_2">
      <property name="geometry">
       <rect>
-       <x>430</x>
+       <x>410</x>
        <y>10</y>
        <width>421</width>
        <height>80</height>
@@ -151,6 +151,16 @@
         <property name="frameShadow">
          <enum>QFrame::Raised</enum>
         </property>
+        <widget class="QTextEdit" name="namaText">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>10</y>
+           <width>401</width>
+           <height>64</height>
+          </rect>
+         </property>
+        </widget>
        </widget>
       </item>
      </layout>
