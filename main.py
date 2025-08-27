@@ -143,22 +143,11 @@ class StockDataWindow(QDialog):
             return ticker
 
     def set_stock_name(self, stock_name):
-        # Try to add a QLabel to the 'nama' frame and set its text
-        if hasattr(self, "nama"):
-            from PyQt5.QtWidgets import QLabel, QVBoxLayout
-            layout = self.nama.layout()
-            if layout is None:
-                layout = QVBoxLayout()
-                self.nama.setLayout(layout)
-            else:
-                for i in reversed(range(layout.count())):
-                    widget = layout.itemAt(i).widget()
-                    if widget:
-                        widget.setParent(None)
-            label = QLabel(stock_name)
-            label.setStyleSheet("color: white; font-size: 22px; font-weight: bold;")
-            label.setAlignment(Qt.AlignCenter)
-            layout.addWidget(label)
+        # Set the company name in the QTextEdit named "namaText" inside the "nama" frame
+        if hasattr(self, "namaText"):
+            self.namaText.setReadOnly(True)
+            self.namaText.setStyleSheet("background: transparent; color: white; border: none; font-size: 35px; font-weight: bold;")
+            self.namaText.setText(stock_name)
 
     def plot_price(self, df, ticker):
         # Only show data from the last year
@@ -445,6 +434,10 @@ def main():
     QMessageBox QPushButton:hover {
         background-color: lightgray;
     }
+    QMessageBox QPushButton:pressed {
+        background-color: gray;
+        color: white;
+    }                  
     QMessageBox QPushButton:pressed {
         background-color: gray;
         color: white;
