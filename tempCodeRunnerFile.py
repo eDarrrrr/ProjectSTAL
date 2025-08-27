@@ -1,1 +1,1 @@
-signupbutton
+QMessageBox.warning(self, "Error", "Password and confirmation do not match!")

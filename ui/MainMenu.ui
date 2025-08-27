@@ -193,6 +193,47 @@ QToolButton:pressed {
          </property>
         </spacer>
        </item>
+       <item alignment="Qt::AlignVCenter">
+        <widget class="QPushButton" name="Profile">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>64</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+background-color: #212121;
+text-align: left;
+padding-left: 4px;
+border-radius: 16px;
+color: #ffffff;
+}
+
+QPushButton:hover {
+    background-color: #2a2a2a;
+}
+
+QPushButton:pressed {
+    background-color: #303030;
+}
+</string>
+         </property>
+         <property name="text">
+          <string>Unknown</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../resource.qrc">
+           <normaloff>:/asset/assets/profile image.png</normaloff>:/asset/assets/profile image.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>50</width>
+           <height>50</height>
+          </size>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>
@@ -244,9 +285,9 @@ QFrame.card {
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-251</y>
+         <y>0</y>
          <width>1089</width>
-         <height>1312</height>
+         <height>1372</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="contentLayout">
@@ -297,7 +338,7 @@ QFrame.card {
            <item alignment="Qt::AlignHCenter">
             <widget class="QLabel" name="heroTitle">
              <property name="text">
-              <string>Welocome to STAL</string>
+              <string>Welcome to STAL</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
@@ -411,7 +452,7 @@ QFrame.card {
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>0</height>
+            <height>600</height>
            </size>
           </property>
           <property name="styleSheet">
@@ -525,7 +566,7 @@ padding-bottom: 7px;</string>
                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
                </property>
                <property name="placeholderText">
-                <string>Search</string>
+                <string>Search for company stock symbol...</string>
                </property>
               </widget>
              </item>
@@ -553,13 +594,13 @@ padding-bottom: 7px;</string>
              </item>
             </layout>
            </widget>
-           <widget class="QWidget" name="">
+           <widget class="QWidget" name="layoutWidget">
             <property name="geometry">
              <rect>
               <x>10</x>
               <y>70</y>
               <width>891</width>
-              <height>51</height>
+              <height>63</height>
              </rect>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout">
@@ -579,6 +620,132 @@ color: rgb(255, 255, 255);</string>
              </item>
             </layout>
            </widget>
+           <widget class="QListWidget" name="autocorrectlist">
+            <property name="geometry">
+             <rect>
+              <x>105</x>
+              <y>61</y>
+              <width>681</width>
+              <height>151</height>
+             </rect>
+            </property>
+            <property name="cursor" stdset="0">
+             <cursorShape>PointingHandCursor</cursorShape>
+            </property>
+            <property name="viewMode">
+             <enum>QListView::ListMode</enum>
+            </property>
+           </widget>
+           <widget class="QTableWidget" name="TopGainers">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>181</y>
+              <width>471</width>
+              <height>332</height>
+             </rect>
+            </property>
+           </widget>
+           <widget class="QTableWidget" name="TopLosers">
+            <property name="geometry">
+             <rect>
+              <x>520</x>
+              <y>180</y>
+              <width>471</width>
+              <height>332</height>
+             </rect>
+            </property>
+           </widget>
+           <widget class="QLabel" name="TopGainersLabel">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>140</y>
+              <width>431</width>
+              <height>41</height>
+             </rect>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);</string>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;Top 10 Gainers&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+           <widget class="QLabel" name="TopGainersLabel_2">
+            <property name="geometry">
+             <rect>
+              <x>520</x>
+              <y>140</y>
+              <width>461</width>
+              <height>41</height>
+             </rect>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);</string>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;Top 10 Losers&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+           <widget class="QLabel" name="datUpdated">
+            <property name="geometry">
+             <rect>
+              <x>360</x>
+              <y>156</y>
+              <width>111</width>
+              <height>20</height>
+             </rect>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);</string>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Date updated&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+           <widget class="QLabel" name="datUpdated_2">
+            <property name="geometry">
+             <rect>
+              <x>880</x>
+              <y>149</y>
+              <width>111</width>
+              <height>31</height>
+             </rect>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);</string>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Updated Aug 26, 2025&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+           <widget class="QLabel" name="label">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>90</y>
+              <width>991</width>
+              <height>51</height>
+             </rect>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);</string>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;From 100 most populer NASDAQ stock&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+           <zorder>layoutWidget</zorder>
+           <zorder>layoutWidget</zorder>
+           <zorder>TopGainers</zorder>
+           <zorder>TopLosers</zorder>
+           <zorder>TopGainersLabel</zorder>
+           <zorder>TopGainersLabel_2</zorder>
+           <zorder>autocorrectlist</zorder>
+           <zorder>datUpdated</zorder>
+           <zorder>datUpdated_2</zorder>
+           <zorder>label</zorder>
           </widget>
           <widget class="QWidget" name="PageAbout">
            <property name="minimumSize">
@@ -634,7 +801,7 @@ background: #323232;
 border-radius: 25px;</string>
             </property>
             <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:12pt; font-weight:600;&quot;&gt;About STAL&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Version:&lt;/span&gt; 1.0.0&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Description:&lt;/span&gt; STAL (Stock Analyzer) adalah aplikasi analisis saham berbasis Python dan PyQt5 yang&lt;br/&gt;membantu investor memahami tren pasar melalui visualisasi data yang intuitif.&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Developer:&lt;/span&gt; Kelompok 5&lt;br/&gt;- Muhammad Haidar Al Ghifari&lt;br/&gt;- Rania Maryam Muthmainah&lt;br/&gt;- Fathih&lt;br/&gt;- Leslie&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Contact us:&lt;/span&gt; line: hdrghif (Haidar)&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;About STAL&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Version:&lt;/span&gt; 1.0.0&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Description:&lt;/span&gt; STAL (Stock Analyzer) adalah aplikasi analisis saham berbasis Python dan PyQt5 yang&lt;br/&gt;membantu investor memahami tren pasar melalui visualisasi data yang intuitif.&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Developer:&lt;/span&gt; Kelompok 5&lt;br/&gt;- Muhammad Haidar Al Ghifari&lt;br/&gt;- Rania Maryam Muthmainah&lt;br/&gt;- Fathih Rayyandra Firmansyah&lt;br/&gt;- Leslie&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Contact us:&lt;/span&gt; line: hdrghif (Haidar)&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="textFormat">
              <enum>Qt::RichText</enum>
@@ -654,7 +821,7 @@ border-radius: 25px;</string>
           <property name="sizeHint" stdset="0">
            <size>
             <width>20</width>
-            <height>400</height>
+            <height>200</height>
            </size>
           </property>
          </spacer>
