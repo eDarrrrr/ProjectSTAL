@@ -505,7 +505,7 @@ QFrame.card {
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">color: rgb(255, 255, 255);
+                <string notr="true">color: rgba(0, 0, 0, 1);
 image: url(:/asset/assets/Search Logo.png);
 background-color: transparent;</string>
                </property>

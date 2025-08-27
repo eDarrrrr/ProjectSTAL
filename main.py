@@ -8,6 +8,8 @@ from PyQt5.QtCore import pyqtSignal
 
 import time
 import pandas as pd
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import matplotlib.pyplot as plt
 import yfinance as yf
 from pathlib import Path
 from datetime import datetime
@@ -342,14 +344,91 @@ class loginpage(QDialog):
 
 
 class StockDataWindow(QDialog):
-    def __init__(self, stock_name="", parent=None):
+    def __init__(self, stock_name="", stock_df=None, parent=None):
         super().__init__(parent)
         uic.loadUi("ui/stockdata.ui", self)
         self.setWindowTitle("Stock Data")
-        # Example: set a label if you have one in your UI
-        # self.stockNameLabel.setText(stock_name)
-        # You can add more logic here to display stock data
+        # Get long name from yfinance
+        long_name = self.get_company_long_name(stock_name)
+        self.set_stock_name(long_name)
+        # Plot price chart in the 'harga' frame if data is provided
+        if stock_df is not None and not stock_df.empty:
+            self.plot_price(stock_df, stock_name)
+        # Show company profile in the profile frame
+        self.set_company_profile(stock_name)
 
+    def get_company_long_name(self, ticker):
+        try:
+            import yfinance as yf
+            info = yf.Ticker(ticker).info
+            return info.get("longName", ticker)
+        except Exception:
+            return ticker
+
+    def set_stock_name(self, stock_name):
+        # Set the company name in the QTextEdit named "namaText" inside the "nama" frame
+        if hasattr(self, "namaText"):
+            self.namaText.setReadOnly(True)
+            self.namaText.setStyleSheet("background: transparent; color: white; border: none; font-size: 35px; font-weight: bold;")
+            self.namaText.setText(stock_name)
+
+    def plot_price(self, df, ticker):
+        # Only show data from the last year
+        if not df.empty:
+            last_date = df['Date'].max()
+            one_year_ago = last_date - pd.Timedelta(days=365)
+            df = df[df['Date'] >= one_year_ago]
+        fig, ax = plt.subplots(figsize=(7, 4))
+        ax.plot(df['Date'], df['Open'], label=f'{ticker} - Open Price')
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Price")
+        ax.set_title(f"Harga Open {ticker}")
+        ax.legend()
+        fig.tight_layout()
+        canvas = FigureCanvas(fig)
+        # Remove previous widgets if any
+        for i in reversed(range(self.harga.layout().count() if self.harga.layout() else 0)):
+            item = self.harga.layout().itemAt(i)
+            widget = item.widget()
+            if widget:
+                widget.setParent(None)
+        # Set layout if not set
+        if not self.harga.layout():
+            from PyQt5.QtWidgets import QVBoxLayout
+            self.harga.setLayout(QVBoxLayout())
+        self.harga.layout().addWidget(canvas)
+
+    def set_company_profile(self, ticker):
+        try:
+            import yfinance as yf
+            info = yf.Ticker(ticker).info
+            profile_text = []
+            profile_text.append(f"<b>Name:</b> {info.get('longName', '-')}")
+            profile_text.append(f"<b>Symbol:</b> {info.get('symbol', '-')}")
+            profile_text.append(f"<b>Exchange:</b> {info.get('exchange', '-')}")
+            profile_text.append(f"<b>Sector:</b> {info.get('sector', '-')}")
+            profile_text.append(f"<b>Industry:</b> {info.get('industry', '-')}")
+            profile_text.append(f"<b>Country:</b> {info.get('country', '-')}")
+            profile_text.append(f"<b>Website:</b> <a href='{info.get('website', '-')}' style='color:#00aaff'>{info.get('website', '-')}</a>")
+            # profile_text.append(f"<b>Description:</b><br>{info.get('longBusinessSummary', '-')}")
+            """profile_text.append("<hr><b>Key Statistics</b>")
+            profile_text.append(f"Market Cap: {info.get('marketCap', '-')}")
+            profile_text.append(f"Shares Outstanding: {info.get('sharesOutstanding', '-')}")
+            profile_text.append(f"Trailing P/E: {info.get('trailingPE', '-')}")
+            profile_text.append(f"Forward P/E: {info.get('forwardPE', '-')}")
+            profile_text.append(f"PEG Ratio: {info.get('pegRatio', '-')}")
+            profile_text.append(f"Price to Book: {info.get('priceToBook', '-')}")
+            profile_text.append(f"Dividend Yield: {info.get('dividendYield', '-')}")
+            profile_text.append(f"52 Week High: {info.get('fiftyTwoWeekHigh', '-')}")
+            profile_text.append(f"52 Week Low: {info.get('fiftyTwoWeekLow', '-')}")
+            profile_text.append(f"Beta: {info.get('beta', '-')}")
+            profile_text.append(f"Average Volume: {info.get('averageVolume', '-')}")"""
+            html = "<br>".join(profile_text)
+        except Exception as e:
+            html = f"Could not fetch company profile/statistics: {e}"
+        # Set the text in the QTextEdit if it exists
+        if hasattr(self, "profileText"):
+            self.profileText.setHtml(html)
 
 
 class MainMenu(QMainWindow):
@@ -504,14 +583,14 @@ class MainMenu(QMainWindow):
 
         hasilPencarian = al.main(SearchBar)
         self.HasilSearchLabel.setWordWrap(True)
-        if hasilPencarian[0] is "Found":
+        if isinstance(hasilPencarian, tuple) and hasilPencarian[0] == "Found":
             self.HasilSearchLabel.setText(f"Hasil pencarian ditemukan.")
+            # Show the StockDataWindow popup with DataFrame
+            _, stock_df, ticker = hasilPencarian
+            self.stock_data_window = StockDataWindow(stock_name=ticker, stock_df=stock_df, parent=self)
+            self.stock_data_window.exec_()
         else:
             self.HasilSearchLabel.setText(f"{hasilPencarian}" )
-
-        # Show the StockDataWindow popup
-        self.stock_data_window = StockDataWindow(stock_name=SearchBar, parent=self)
-        self.stock_data_window.exec_()
 
     def open_profile_dialog(self, username, email, password):
         dlg = ProfileDialog(
@@ -801,6 +880,10 @@ def main():
     QMessageBox QPushButton:hover {
         background-color: lightgray;
     }
+    QMessageBox QPushButton:pressed {
+        background-color: gray;
+        color: white;
+    }                  
     QMessageBox QPushButton:pressed {
         background-color: gray;
         color: white;
