@@ -3,35 +3,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import yfinance as yf
-# ========== COMPANY PROFILE & STATISTICS ==========
-
-def load_company_profile_and_stats(ticker: str):
-    """Return company info and statistics as a dict."""
-    try:
-        stock = yf.Ticker(ticker)
-        info = stock.info
-        profile = {
-            'longName': info.get('longName'),
-            'symbol': info.get('symbol'),
-            'sector': info.get('sector'),
-            'industry': info.get('industry'),
-            'country': info.get('country'),
-            'website': info.get('website'),
-            'marketCap': info.get('marketCap'),
-            'fullTimeEmployees': info.get('fullTimeEmployees'),
-            'dividendYield': info.get('dividendYield'),
-            'trailingPE': info.get('trailingPE'),
-            'forwardPE': info.get('forwardPE'),
-            'priceToBook': info.get('priceToBook'),
-            'beta': info.get('beta'),
-            '52WeekChange': info.get('52WeekChange'),
-            '52WeekHigh': info.get('fiftyTwoWeekHigh'),
-            '52WeekLow': info.get('fiftyTwoWeekLow'),
-        }
-        return profile
-    except Exception as e:
-        return {'error': str(e)}
-
 
 
 SUFFIXES = ["", ".JK", ".NS", ".BO", ".L", ".TO", ".AX", ".HK", ".T", ".SI", ".DE", ".PA", ".SW", ".MI", ".MC"]
@@ -119,8 +90,14 @@ def download_one_ticker(ticker: str) -> pd.DataFrame:
 # ========== VISUAL ==========
 
 def StockData(SearchResult: pd.DataFrame, ticker: str, currency_label="$"):
+    # Only show data from the last year
+    df = SearchResult.copy()
+    if not df.empty:
+        last_date = df['Date'].max()
+        one_year_ago = last_date - pd.Timedelta(days=365)
+        df = df[df['Date'] >= one_year_ago]
     plt.figure(figsize=(10, 5))
-    plt.plot(SearchResult['Date'], SearchResult['Open'], label=f'{ticker} - Open Price')
+    plt.plot(df['Date'], df['Open'], label=f'{ticker} - Open Price')
     plt.xlabel("Date")
     plt.ylabel(f"Price ({currency_label})")
     plt.title(f"Harga Open {ticker} ({currency_label})")
@@ -147,8 +124,6 @@ def ROI(SearchResult: pd.DataFrame, ticker: str, max_months=None):
     - MODE 2: fixed amount tiap bulan
     Harga dikonversi ke IDR via FX_RATE.
     """
-    global buys, buys_2
-    
     SIP_DAY = 30
     FX_RATE = 1         # Ubah sesuai kurs: contoh 1 INR/USD -> IDR
     CURRENCY = "$"
@@ -231,23 +206,6 @@ def ROI(SearchResult: pd.DataFrame, ticker: str, max_months=None):
     print(f"ROI           : {roi_2*100:.2f}%")
     print(f"CAGR (approx) : {cagr_2*100:.2f}% / tahun")
 
-
-def print_company_profile(
-    profile: dict,
-    dfp,
-    price_ref: str,
-    ticker: str,
-    buys,
-    buys_2,
-    CURRENCY: str
-):
-    if 'error' in profile:
-        print(f"Error loading company profile: {profile['error']}")
-        return
-    print("=== Company Profile & Statistics ===")
-    for k, v in profile.items():
-        print(f"{k}: {v}")
-
     # Plot harga + titik beli (IDR)
     plt.figure(figsize=(11, 5))
     plt.plot(dfp['Date'], dfp[price_ref], label=f'{ticker} {price_ref}')
@@ -277,51 +235,6 @@ def print_company_profile(
     plt.legend()
     plt.tight_layout()
     plt.show()
-
-def predict_next_month_open_price(SearchResult: pd.DataFrame):
-    """
-    Prediksi harga open untuk 30 hari ke depan menggunakan regresi linear
-    berdasarkan 30 hari harga open terakhir, hanya dengan numpy.
-    """
-    df = SearchResult.copy()
-    df = df.sort_values('Date').reset_index(drop=True)
-    if len(df) < 30:
-        print("Data kurang dari 30 hari, prediksi tidak dapat dilakukan.")
-        return None
-
-    # Ambil 30 hari terakhir
-    last_30 = df.tail(30)
-    X = np.arange(30)  # Hari ke-0 sampai ke-29
-    y = last_30['Open'].values
-
-    # Regresi linear manual: y = a*X + b
-    A = np.vstack([X, np.ones(len(X))]).T
-    a, b = np.linalg.lstsq(A, y, rcond=None)[0]
-
-    # Prediksi 30 hari ke depan (hari ke-30 sampai ke-59)
-    X_future = np.arange(30, 60)
-    y_pred = a * X_future + b
-
-    # Buat tanggal prediksi
-    last_date = last_30['Date'].iloc[-1]
-    future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=30, freq='B')  # hari kerja
-
-    # Plot hasil prediksi
-    plt.figure(figsize=(10, 5))
-    plt.plot(last_30['Date'], last_30['Open'], label='Open Price (Last 30 days)')
-    plt.plot(future_dates, y_pred, label='Predicted Open Price (Next 30 days)', linestyle='--')
-    plt.xlabel("Date")
-    plt.ylabel("Open Price")
-    plt.title("Prediksi Harga Open 30 Hari ke Depan (Regresi Linear, Numpy)")
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-    # Tampilkan prediksi hari pertama dan terakhir
-    print(f"Prediksi harga open 1 hari ke depan: {y_pred[0]:,.2f}")
-    print(f"Prediksi harga open 30 hari ke depan: {y_pred[-1]:,.2f}")
-
-    return future_dates, y_pred
 
 # ========== MAIN ==========
 def predict_next_month_open_price(SearchResult: pd.DataFrame):
@@ -369,6 +282,39 @@ def predict_next_month_open_price(SearchResult: pd.DataFrame):
 
     return future_dates, y_pred
 
+def display_company_profile_and_stats(ticker: str):
+    """
+    Display company profile and statistics using yfinance.
+    """
+    try:
+        yf_ticker = yf.Ticker(ticker)
+        info = yf_ticker.info
+        # Basic profile
+        print("\n=== Company Profile ===")
+        print(f"Name: {info.get('longName', '-')}")
+        print(f"Symbol: {info.get('symbol', '-')}")
+        print(f"Exchange: {info.get('exchange', '-')}")
+        print(f"Sector: {info.get('sector', '-')}")
+        print(f"Industry: {info.get('industry', '-')}")
+        print(f"Country: {info.get('country', '-')}")
+        print(f"Website: {info.get('website', '-')}")
+        print(f"Description: {info.get('longBusinessSummary', '-')}\n")
+        # Statistics
+        print("=== Key Statistics ===")
+        print(f"Market Cap: {info.get('marketCap', '-')}")
+        print(f"Shares Outstanding: {info.get('sharesOutstanding', '-')}")
+        print(f"Trailing P/E: {info.get('trailingPE', '-')}")
+        print(f"Forward P/E: {info.get('forwardPE', '-')}")
+        print(f"PEG Ratio: {info.get('pegRatio', '-')}")
+        print(f"Price to Book: {info.get('priceToBook', '-')}")
+        print(f"Dividend Yield: {info.get('dividendYield', '-')}")
+        print(f"52 Week High: {info.get('fiftyTwoWeekHigh', '-')}")
+        print(f"52 Week Low: {info.get('fiftyTwoWeekLow', '-')}")
+        print(f"Beta: {info.get('beta', '-')}")
+        print(f"Average Volume: {info.get('averageVolume', '-')}")
+    except Exception as e:
+        print(f"Could not fetch company profile/statistics: {e}")
+
 # if __name__ == "__main__":
 def main(SearchInput):
     while True:
@@ -392,8 +338,7 @@ def main(SearchInput):
     StockData(SearchResult, ticker)
     ROI(SearchResult, ticker, max_months=12)
     # Print company profile and statistics
-    profile = load_company_profile_and_stats(ticker)
-    print_company_profile(profile, SearchResult, "Open", ticker, buys, buys_2, "IDR")
+    display_company_profile_and_stats(used_ticker)
     # Prediksi harga open 1 bulan ke depan
     predict_next_month_open_price(SearchResult)
     return "Found", SearchResult, ticker
