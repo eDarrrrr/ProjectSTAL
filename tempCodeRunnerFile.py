@@ -1,5 +1,1 @@
-<<<<<<< HEAD
-signupbutton
-=======
-self.Profile.setText(f"{LoginUsername}")
->>>>>>> main
+QMessageBox.warning(self, "Error", "Password and confirmation do not match!")

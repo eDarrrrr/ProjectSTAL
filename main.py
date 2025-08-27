@@ -1,18 +1,26 @@
 import sys, os, json
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QPushButton, QGraphicsDropShadowEffect, QDialog
 from PyQt5 import uic, QtWidgets
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpacerItem, QSizePolicy
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView
 from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtGui import QCursor, QColor, QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import pyqtSignal
+
 import time
 import pandas as pd
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
+import yfinance as yf
+from pathlib import Path
+from datetime import datetime
+import requests
 
 import resource
 
 import Algoritm as al
+
+API_KEY = "AIzaSyCt103_Flr7bvliMztINX-nQYdz6lQaJbo"
+PROJECT_ID = "testemailpass-e20cf"
 
 class SignUp(QDialog):
     def __init__(self):
@@ -21,53 +29,154 @@ class SignUp(QDialog):
         self.signupbutton.clicked.connect(self.signupfunction)
         self.password.setEchoMode(QtWidgets.QLineEdit.Password)
         self.confirmpassword.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.backbutton.clicked.connect(self.backtologin)
+        self.setFixedSize(414, 700)
+        self.setWindowFlags(Qt.WindowCloseButtonHint)
      
-    def signupfunction(self):
-        email = self.email.text()
-        username = self.username.text()
-        password = self.password.text()
-        confirm = self.confirmpassword.text()
-        if password != confirm:
-            QMessageBox.warning(self, "Error", "Password and confirmation do not match!")
-            return
-        
-        print("Successfully registered account with email", email, "and password", password)
-
-        # File tempat simpan data user
-        filename = "users.json"
-
-        users = {}
-
-        if os.path.exists(filename):
-            with open(filename, "r") as f:
-                content = f.read().strip()   # baca isi file
-                if content:                  # kalau tidak kosong
-                    try:
-                        users = json.loads(content)
-                    except json.JSONDecodeError:
-                        users = {}
-
-        if email in users:
-            QMessageBox.warning(self, "Error", "Email have been registered!")
-            return
-        
-        for u in users.values():
-            if u["username"] == username:
-                QMessageBox.warning(self, "Error", "Username have been registered!")
-                return
-
-        # Tambah user baru
-        users[email] = {
-            "username": username,
-            "password": password
-        }
-
-        with open(filename, "w") as f:
-            json.dump(users, f, indent=4)
-
+    def backtologin(self):
         self.hide()
         self.loginpage = loginpage()
         self.loginpage.show()
+
+    def signupfunction(self):
+        email = self.email.text().strip()
+        username = self.username.text().strip()
+        password = self.password.text()
+        confirm  = self.confirmpassword.text()
+
+        if password != confirm:
+            QMessageBox.warning(self, "Error", "Password and confirmation do not match!")
+            return
+        if not self.validate_email(email):
+            QMessageBox.warning(self, "Error", "Invalid email format.")
+            return
+        if not self.validate_password(password):
+            QMessageBox.warning(self, "Error", "Password must be at least 6 characters.")
+            return
+        if not username:
+            QMessageBox.warning(self, "Error", "Username cannot be empty.")
+            return
+
+        # 1) Cek ketersediaan username (tanpa auth)
+        try:
+            if self.firebase_username_exists(username):
+                QMessageBox.warning(self, "Error", "Username is already taken.")
+                return
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to check username: {e}")
+            return
+
+        # 2) Buat akun di Firebase Auth
+        try:
+            auth_info = self.firebase_sign_up(email, password)
+            id_token = auth_info["idToken"]
+            uid      = auth_info["localId"]
+        except requests.HTTPError as e:
+            # tampilkan pesan error dari Firebase
+            try:
+                msg = e.response.json().get("error", {}).get("message", str(e))
+            except Exception:
+                msg = str(e)
+            QMessageBox.critical(self, "Sign Up Failed", msg)
+            return
+        except Exception as e:
+            QMessageBox.critical(self, "Sign Up Failed", str(e))
+            return
+
+        # 3) Reserve username (cegah dipakai user lain)
+        try:
+            r = self.firestore_reserve_username(id_token, uid, username)
+            if r.status_code != 200:
+                # kalau gagal karena balapan (sudah keburu dipakai), batalkan
+                if r.status_code == 409:  # conflict
+                    QMessageBox.warning(self, "Error", "Username just got taken by someone else. Please choose another.")
+                else:
+                    QMessageBox.warning(self, "Error", f"Failed to reserve username: {r.text}")
+                return
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to reserve username: {e}")
+            return
+
+        # 4) Simpan profil user di Firestore (/users/{uid})
+        try:
+            self.firestore_set_user(id_token, uid, {
+                "email": email,
+                "username": username,
+                "createdAt": "now()"  # placeholder string; gunakan Cloud Functions kalau mau timestamp server
+            })
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to save user profile: {e}")
+            return
+
+        QMessageBox.information(self, "Success", f"Account created for {email}")
+        self.hide()
+        self.loginpage = loginpage()
+        self.loginpage.show()
+        
+
+    def firebase_username_exists(self, username):
+        # Cek apakah dokumen usernames/{username_lower} sudah ada (tanpa auth)
+        uname = username.strip().lower()
+        doc = f"projects/{PROJECT_ID}/databases/(default)/documents/usernames/{uname}"
+        url = f"https://firestore.googleapis.com/v1/{doc}"
+        r = requests.get(url)
+        if r.status_code == 200:
+            return True
+        if r.status_code == 404:
+            return False
+        # error lain
+        r.raise_for_status()
+
+    def firebase_sign_up(self, email, password):
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={API_KEY}"
+        r = requests.post(url, json={"email": email, "password": password, "returnSecureToken": True})
+        # kalau email sudah dipakai, Firebase balikin 400 dgn error message
+        r.raise_for_status()
+        return r.json()  # berisi idToken, refreshToken, localId (uid)
+
+    def firestore_set_user(self, id_token, uid, data: dict):
+        # Set dokumen users/{uid}
+        doc = f"projects/{PROJECT_ID}/databases/(default)/documents/users/{uid}"
+        url = f"https://firestore.googleapis.com/v1/{doc}"
+        headers = {"Authorization": f"Bearer {id_token}"}
+        payload = self._fs_fields(data)
+        r = requests.patch(url, headers=headers, json=payload)
+        r.raise_for_status()
+
+    def firestore_reserve_username(self, id_token, uid, username):
+        # Tulis dokumen usernames/{username_lower} = {uid: "..."}
+        uname = username.strip().lower()
+        doc = f"projects/{PROJECT_ID}/databases/(default)/documents/usernames/{uname}"
+        url = f"https://firestore.googleapis.com/v1/{doc}"
+        headers = {"Authorization": f"Bearer {id_token}"}
+        payload = self._fs_fields({"uid": uid})
+        # pakai PATCH; kalau ingin cegah race condition keras, bisa tambah param:
+        # ?currentDocument.exists=false  → gagal bila sudah ada
+        r = requests.patch(url + "?currentDocument.exists=false", headers=headers, json=payload)
+        return r
+    
+    def _fs_fields(self, d):
+        # ubah dict Python → Firestore REST typed fields (stringValue)
+        fields = {}
+        for k, v in d.items():
+            if isinstance(v, bool):
+                fields[k] = {"booleanValue": v}
+            elif isinstance(v, (int, float)) and not isinstance(v, bool):
+                # simple: simpan semua angka sebagai double
+                fields[k] = {"doubleValue": float(v)}
+            else:
+                fields[k] = {"stringValue": str(v)}
+        return {"fields": fields}
+
+    def firestore_update_user_with_username(self, id_token, uid, username):
+        # Simpan juga username pada users/{uid}
+        return self.firestore_set_user(id_token, uid, {"username": username})
+
+    def validate_email(self, email: str):
+        return "@" in email and "." in email.split("@")[-1]
+
+    def validate_password(self, pw: str):
+        return len(pw) >= 6  # syarat minimal Firebase
 
 
 
@@ -80,43 +189,157 @@ class loginpage(QDialog):
         self.loginbutton.clicked.connect(self.loginfunction)
         self.password.setEchoMode(QtWidgets.QLineEdit.Password)
         self.createaccount.clicked.connect(self.gotosignup)
+        self.setWindowFlags(Qt.WindowCloseButtonHint)
+        self.forgotpass.clicked.connect(self.on_forgot_password_clicked)
+
+        self.btn_toggle.setCheckable(True)
+        self.btn_toggle.toggled.connect(self._toggle_password)
 
     def loginfunction(self):
-        username = self.username.text().strip()
-        password = self.password.text().strip()
-        
-        filename = "users.json"
-        if not os.path.exists(filename):
-            QMessageBox.warning(self, "Error", "No account registered yet!")
+        username_input = self.username.text().strip()
+        password_input = self.password.text().strip()
+
+        if not username_input or not password_input:
+            QMessageBox.warning(self, "Error", "Username dan password wajib diisi.")
             return
 
-        with open(filename, "r") as f:
-            users = json.load(f)
-
-        # cari username di dalam semua users (karena key = email)
-        for email, data in users.items():
-            if data["username"] == username and data["password"] == password:
-                print("Login success!\n username : ", username, "password : ", password)
-                QMessageBox.information(self, "Success", f"Login succesful! (Email: {email})")
-                LoginUsername = data["username"]
-                LoginEmail = email
-                LoginPassword = data["password"]
-                self.accept()
-                self.mainmenu = MainMenu(
-                    username=LoginUsername,
-                    email=LoginEmail,
-                    password=LoginPassword
-                    )
-                self.mainmenu.show()
+        try:
+            # Jika user memasukkan email langsung, izinkan juga
+            if "@" in username_input:
+                QMessageBox.warning(self, "Error", "Berikan username bukan email.")
+                return
             else:
-                QMessageBox.warning(self, "Error", "Username or password is incorrect!")
+                # Login pakai username → ambil email dari Firestore: usernames/{usernameLower}
+                uname_lower = username_input.lower()
+                doc = self.firestore_get_username_doc(uname_lower)
+                if not doc:
+                    QMessageBox.warning(self, "Error", "Username tidak ditemukan.")
+                    return
 
+                email_for_login = self.extract_email_from_username_doc(doc)
+                if not email_for_login:
+                    # Kamu belum menyimpan email di dokumen /usernames. Solusi cepat:
+                    # Saat signup, simpan juga field "email" di /usernames/{usernameLower}.
+                    QMessageBox.critical(
+                        self, "Error",
+                        "Dokumen username tidak berisi email. Perbarui schema /usernames agar menyimpan {email}."
+                    )
+                    return
+
+            # Panggil Firebase Auth
+            auth = self.firebase_sign_in(email_for_login, password_input)
+            id_token = auth["idToken"]
+            uid      = auth["localId"]
+            email    = auth.get("email", email_for_login)
+
+            # ← Di sini kamu sudah LOGIN. Jangan simpan password ke state / file.
+            QMessageBox.information(self, "Success", f"Login successful! (Email: {email})")
+
+            self.accept()
+            self.mainmenu = MainMenu(
+                username=username_input,  # tampilkan yang diketik (atau ambil dari profil Firestore jika mau akurat)
+                email=email,
+                password=password_input  # sebaiknya tidak diteruskan; kalau butuh, hilangkan parameter ini dari MainMenu
+            )
+            self.mainmenu.show()
+
+        except requests.HTTPError as e:
+            # Ambil pesan error dari Firebase
+            try:
+                msg = e.response.json().get("error", {}).get("message", str(e))
+            except Exception:
+                msg = str(e)
+            # Pesan umum Firebase yang sering muncul:
+            # EMAIL_NOT_FOUND, INVALID_PASSWORD, USER_DISABLED
+            if msg == "EMAIL_NOT_FOUND":
+                msg = "Akun tidak ditemukan."
+            elif msg == "INVALID_PASSWORD":
+                msg = "Password salah."
+            elif msg == "USER_DISABLED":
+                msg = "Akun dinonaktifkan."
+            QMessageBox.critical(self, "Login Failed", msg)
+
+        except Exception as e:
+            QMessageBox.critical(self, "Login Failed", str(e))
 
 
     def gotosignup(self):
         self.hide()                     # sembunyikan login page
         self.signup_window = SignUp()   
         self.signup_window.show()
+
+    def _toggle_password(self, checked: bool):
+        if checked:
+            self.password.setEchoMode(QLineEdit.Normal)
+            self.btn_toggle.setText("Hide")
+        else:
+            self.password.setEchoMode(QLineEdit.Password)
+            self.btn_toggle.setText("Show")
+
+    def firebase_sign_in(self, email, password):
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={API_KEY}"
+        r = requests.post(url, json={"email": email, "password": password, "returnSecureToken": True}, timeout=15)
+        r.raise_for_status()
+        return r.json()  # {idToken, refreshToken, localId(uid), email, ...}
+
+    def firestore_get_username_doc(self, username_lower):
+        # GET dokumen usernames/{usernameLower} (read publik sesuai rules)
+        doc = f"projects/{PROJECT_ID}/databases/(default)/documents/usernames/{username_lower}"
+        url = f"https://firestore.googleapis.com/v1/{doc}"
+        r = requests.get(url, timeout=15)
+        if r.status_code == 404:
+            return None
+        r.raise_for_status()
+        return r.json()
+
+    def extract_email_from_username_doc(self, doc_json):
+        # Mendukung dua skema umum:
+        # 1) fields.email.stringValue
+        # 2) fields.uid.stringValue  (kalau hanya ada uid, sebaiknya tambahkan email di dokumen ini saat signup)
+        fields = doc_json.get("fields", {})
+        if "uid" in fields and "stringValue" in fields["uid"]:
+            doc = f"projects/{PROJECT_ID}/databases/(default)/documents/users/{fields['uid']['stringValue']}"
+            url = f"https://firestore.googleapis.com/v1/{doc}"
+            r = requests.get(url, timeout=15)
+            if r.status_code == 404:
+                return None
+            r.raise_for_status()
+            user_doc = r.json()
+            user_doc.get("fields", {})
+            if "email" in user_doc.get("fields", {}) and "stringValue" in user_doc["fields"]["email"]:
+                return user_doc["fields"]["email"]["stringValue"]
+        return None  # tidak ada email; sulit login dengan username saja
+    
+    def send_password_reset(self, email: str, continue_url: str | None = None):
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={API_KEY}"
+        payload = {"requestType": "PASSWORD_RESET", "email": email}
+        if continue_url:
+            payload["continueUrl"] = continue_url  # opsional: redirect setelah user selesai reset
+        r = requests.post(url, json=payload, timeout=15)
+        # Firebase akan balas 200 meski email tidak terdaftar **jika di-enable di sisi mereka**;
+        # tapi seringnya 400: EMAIL_NOT_FOUND. Untuk keamanan, kita tampilkan pesan generik.
+        if r.status_code != 200:
+            try:
+                msg = r.json().get("error", {}).get("message")
+            except Exception:
+                msg = r.text
+            # Jangan bocorkan status akun (anti account enumeration)
+            # -> tetap tampilkan pesan sukses generik
+        return True
+    
+    def on_forgot_password_clicked(self):
+        email = self.email_input.text().strip()
+        if not email:
+            QMessageBox.warning(self, "Forgot Password", "Masukkan email yang terdaftar.")
+            return
+        try:
+            self.send_password_reset(email, continue_url="https://appkamu.web.app/reset-done")
+        except Exception:
+            pass  # sengaja disenyapkan
+        QMessageBox.information(
+            self, "Forgot Password",
+            "Jika email terdaftar, tautan reset telah dikirim. Periksa inbox/spam."
+        )
 
 
 
@@ -216,12 +439,48 @@ class MainMenu(QMainWindow):
         self.Page.setCurrentIndex(0)
         self.autocorrectlist.hide()
         self.setProfile(username, email)
+        self.currency = "$"
 
+        self.TopGainers.itemDoubleClicked.connect(lambda _: self._apply_selected(self.TopGainers))
+        self.TopLosers.itemDoubleClicked.connect(lambda _: self._apply_selected(self.TopLosers))
 
         df = pd.read_csv("Data/listnasdaq.csv")
         df2 = pd.read_csv("Data/DaftarSaham.csv")
         self.company = df["Symbol"].dropna().tolist()
         self.company += df2["Code"].dropna().tolist()
+
+        tickers = [
+        "AAPL", "MSFT", "AMZN", "NVDA", "META",
+        "GOOGL", "GOOG", "TSLA", "PEP", "COST",
+        "AVGO", "ADBE", "NFLX", "AMD", "CSCO",
+        "INTC", "QCOM", "TXN", "AMGN", "SBUX",
+        "INTU", "HON", "AMAT", "PDD", "BKNG",
+        "CHTR", "ADP", "MU", "MDLZ", "LRCX",
+        "REGN", "GILD", "VRTX", "ISRG", "CSX",
+        "PANW", "MAR", "ABNB", "FTNT", "MRVL",
+        "KLAC", "SNPS", "CDNS", "KDP", "MELI",
+        "CRWD", "MNST", "ADI", "ORLY", "NXPI",
+        "CTAS", "ODFL", "ROP", "PAYX", "TEAM",
+        "WDAY", "XEL", "PCAR", "IDXX", "CTSH",
+        "CPRT", "DLTR", "EXC", "AEP", "CEG",
+        "MRNA", "DXCM", "ZS", "CSGP", "LCID",
+        "SPLK", "VRSK", "ROST", "KHC", "ALGN",
+        "BIDU", "EBAY", "DDOG", "ANSS", "NTES",
+        "CHKP", "VERX", "PDD", "BIIB", "DOCU",
+        "ZM", "OKTA", "SIRI", "LULU", "JD",
+        "PYPL", "VRSN", "FAST", "CTLT", "SGEN",
+        "CDW", "AZN", "WDAY", "ZS", "CRWD",
+        "MCHP", "SWKS", "MTCH", "INCY", "CSIQ"
+        ]
+
+
+
+        self.symbol_name_map = self._load_symbol_name_map([
+            "Data/listnasdaq.csv",     
+        ])
+        
+        self.get_top_movers(tickers, n=10)
+        self.load_top_movers_into_tables(tickers, n=5)
         
         self.autocorrectlist.addItems(self.company)
         self.autocorrectlist.setStyleSheet("""
@@ -240,6 +499,24 @@ class MainMenu(QMainWindow):
             color: white;
         }
         """)
+
+        style_gainers = """
+        QTableWidget { background:#1e1e1e; color:white; gridline-color:#444; border:1px solid #444; }
+        QHeaderView::section { background:#2d2d2d; color:white; border:1px solid #444; padding:4px; }
+        QTableWidget::item { padding:4px; }
+        QTableWidget::item:selected { background:#1e3b1e; color:white; }  /* hijau gelap */
+        """
+        style_losers = """
+        QTableWidget { background:#1e1e1e; color:white; gridline-color:#444; border:1px solid #444; }
+        QHeaderView::section { background:#2d2d2d; color:white; border:1px solid #444; padding:4px; }
+        QTableWidget::item { padding:4px; }
+        QTableWidget::item:selected { background:#3b1e1e; color:white; }  /* merah gelap */
+        """
+        
+        self.TopGainers.setStyleSheet(style_gainers)
+        self.TopLosers.setStyleSheet(style_losers)
+
+
         self.autocorrectlist.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.SearchBar.textChanged.connect(self._on_search_text)
         
@@ -330,6 +607,175 @@ class MainMenu(QMainWindow):
         self.login_window = loginpage()
         self.login_window.show()
 
+    def get_top_movers(self, tickers, n=10, period="5d"):
+        data = yf.download(
+            tickers,
+            period=period,
+            group_by="column",
+            auto_adjust=False,
+            progress=False,
+            threads=True,
+        )
+        if data.empty:
+            raise ValueError("Data kosong dari yfinance.")
+
+        # pilih harga: pakai Adj Close kalau ada, else Close
+        def pick_price_frame(df):
+            if isinstance(df.columns, pd.MultiIndex):
+                lvl0 = df.columns.get_level_values(0)
+                if "Adj Close" in lvl0:
+                    return df["Adj Close"]
+                elif "Close" in lvl0:
+                    return df["Close"]
+                else:
+                    raise KeyError("Tidak ada 'Adj Close' / 'Close'.")
+            else:
+                if "Adj Close" in df.columns:
+                    return df["Adj Close"].to_frame(name="Price")
+                elif "Close" in df.columns:
+                    return df["Close"].to_frame(name="Price")
+                else:
+                    raise KeyError("Tidak ada 'Adj Close' / 'Close'.")
+
+        px = pick_price_frame(data).dropna(how="all")
+        if len(px.index) < 2:
+            raise ValueError("Butuh >= 2 hari data untuk hitung perubahan.")
+        
+        last_ts = px.index[-1]                   # pandas Timestamp
+        try:
+            # yfinance biasanya UTC-naive; jadikan ET biar sama seperti Yahoo Finance
+            last_et_date = last_ts.tz_localize("UTC").tz_convert("US/Eastern").date()
+        except Exception:
+            # kalau sudah tz-aware atau gagal konversi, ambil .date() saja
+            last_et_date = last_ts.date()
+
+        # format: "Updated Aug 25, 2025"
+        updated_text = f"Updated {last_et_date.strftime('%b %d, %Y')}"
+
+        # set ke label di UI (pastikan objectName tepat: datUpdated)
+        if hasattr(self, "datUpdated"):
+            self.datUpdated.setText(updated_text)
+            self.datUpdated_2.setText(updated_text)
+        last_local = pd.Timestamp(last_ts).to_pydatetime()
+        self.datUpdated.setText(f"Updated {last_local.strftime('%b %d, %Y')}")
+        self.datUpdated_2.setText(f"Updated {last_local.strftime('%b %d, %Y')}")
+
+        last = px.iloc[-1]
+        prev = px.iloc[-2]
+
+        # normalisasi ke DataFrame
+        if isinstance(last, pd.Series) and last.ndim == 1 and not isinstance(last.index, pd.MultiIndex):
+            df = pd.DataFrame({
+                "Symbol": last.index.astype(str),
+                "Price": last.values.astype(float),
+                "Change %": ((last.values - prev.values) / prev.values * 100.0)
+            })
+        else:
+            df = pd.DataFrame({"Price": last}).reset_index()
+            df.rename(columns={"level_0": "Field", "level_1": "Symbol"}, inplace=True)
+            df = df[df["Field"].isin(["Adj Close","Close"])]
+            df = df[["Symbol","Price"]].drop_duplicates("Symbol").set_index("Symbol")
+            prev_df = pd.DataFrame({"Prev": prev}).reset_index()
+            prev_df.rename(columns={"level_0": "Field", "level_1": "Symbol"}, inplace=True)
+            prev_df = prev_df[prev_df["Field"].isin(["Adj Close","Close"])]
+            prev_df = prev_df[["Symbol","Prev"]].drop_duplicates("Symbol").set_index("Symbol")
+            df = df.join(prev_df, how="inner")
+            df["Change %"] = (df["Price"] - df["Prev"]) / df["Prev"] * 100.0
+            df = df.reset_index()
+
+        df = df.dropna(subset=["Change %"]).sort_values("Change %", ascending=False)
+
+        # ambil top gainers & losers
+        top_gainers = df.head(n).reset_index(drop=True)
+        top_losers  = df.tail(n).reset_index(drop=True)
+
+        # === Tambahkan kolom Name ===
+        top_gainers["Name"] = top_gainers["Symbol"].map(self.symbol_name_map).fillna("")
+        top_losers["Name"]  = top_losers["Symbol"].map(self.symbol_name_map).fillna("")
+
+        # atur urutan kolom
+        top_gainers = top_gainers[["Symbol", "Name", "Price", "Change %"]]
+        top_losers  = top_losers[["Symbol", "Name", "Price", "Change %"]]
+
+        return top_gainers, top_losers
+
+    # --- Helper isi QTableWidget dari DataFrame ---
+    def _fill_table_from_df(self, table, df: pd.DataFrame, columns=("Symbol","Name","Price","Change %"), is_gainer=True):
+        table.clear()
+        table.setColumnCount(len(columns))
+        table.setHorizontalHeaderLabels(columns)
+        table.setRowCount(len(df))
+        table.verticalHeader().setVisible(False)
+
+        for r, (_, row) in enumerate(df.iterrows()):
+            for c, col in enumerate(columns):
+                val = row[col]
+                if col == "Change %":
+                    text = f"{val:+.2f}%"
+                elif col == "Price":
+                    text = f"{val:,.2f} {self.currency}"
+                else:
+                    text = str(val)
+
+                item = QTableWidgetItem(text)
+
+                # kalau kolom Change %
+                if col == "Change %":
+                    if val >= 0:
+                        item.setForeground(QColor("lime"))   # hijau utk positif
+                    else:
+                        item.setForeground(QColor("red"))    # merah utk negatif
+                    item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+                elif col == "Price":
+                    item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+                table.setItem(r, c, item)
+
+        header = table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+        table.setEditTriggers(table.NoEditTriggers)
+        table.setSelectionBehavior(table.SelectRows)
+        table.setSelectionMode(table.SingleSelection)
+
+    # --- Load & tampilkan ke 2 tabel ---
+    def load_top_movers_into_tables(self, tickers, n=10):
+        try:
+            gainers, losers = self.get_top_movers(tickers, n=10)
+        except Exception as e:
+            # kalau gagal, kosongkan tabel & bisa tampilkan pesan
+            self.TopGainers.setRowCount(0)
+            self.TopLosers.setRowCount(0)
+            print("Gagal ambil top movers:", e)
+            return
+
+        self._fill_table_from_df(self.TopGainers, gainers)
+        self._fill_table_from_df(self.TopLosers, losers)
+    
+    def _load_symbol_name_map(self, csv_files):
+        try:
+            dfs = []
+            for p in csv_files:
+                p = Path(p)
+                if p.exists():
+                    # pastikan kolom yang dipakai ada
+                    df = pd.read_csv(p, usecols=["Symbol", "Company Name"])
+                    dfs.append(df)
+            if not dfs:
+                return {}
+            df_all = pd.concat(dfs, ignore_index=True)
+            df_all = df_all.dropna(subset=["Symbol"]).drop_duplicates("Symbol")
+            return dict(zip(df_all["Symbol"], df_all["Company Name"]))
+        except Exception as e:
+            print("Gagal load symbol_name_map:", e)
+            return {}
+        
+    def _apply_selected(self, table):
+        row = table.currentRow()
+        if row < 0: return
+        sym = table.item(row, 0).text()  # kolom 0 = Symbol
+        if hasattr(self, "SearchBar"):
+            self.SearchBar.setText(sym)
 
 class ProfileDialog(QDialog):
     signOutRequested = pyqtSignal()  # sinyal ke MainMenu
@@ -442,10 +888,13 @@ def main():
         background-color: gray;
         color: white;
     }                  
-    """)     
-    window = MainMenu()
+    """)
+
+    window = loginpage()
+
     window.show()
     app.exec()
+
 
 if __name__ == "__main__":
     main()
