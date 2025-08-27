@@ -285,7 +285,7 @@ QFrame.card {
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-154</y>
+         <y>0</y>
          <width>1089</width>
          <height>1372</height>
         </rect>
@@ -338,7 +338,7 @@ QFrame.card {
            <item alignment="Qt::AlignHCenter">
             <widget class="QLabel" name="heroTitle">
              <property name="text">
-              <string>Welocome to STAL</string>
+              <string>Welcome to STAL</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
@@ -566,7 +566,7 @@ padding-bottom: 7px;</string>
                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
                </property>
                <property name="placeholderText">
-                <string>Search</string>
+                <string>Search for company stock symbol...</string>
                </property>
               </widget>
              </item>
