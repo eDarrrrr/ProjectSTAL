@@ -352,10 +352,10 @@ def plot_quarterly_revenue_last_5_years(ticker: str):
         plt.bar(quarters, revenues, color="#2eb11f")
         plt.xlabel("Quarter")
         plt.ylabel("Revenue")
-        plt.title(f"Quarterly Revenue {ticker}")
+        plt.title(f"Quarterly Revenue for {ticker} (Last 5 Years)")
         plt.xticks(rotation=45)
         plt.tight_layout()
-        # plt.show()  # REMOVE: now embedded in UI
+        plt.show()
         # Print revenue values
         for q, r in zip(quarters, revenues):
             print(f"Revenue {q}: {r:,.0f}")
