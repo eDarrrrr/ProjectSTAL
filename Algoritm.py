@@ -111,7 +111,7 @@ def StockData(SearchResult: pd.DataFrame, ticker: str, currency_label="$"):
     plt.title(f"Harga Open {ticker} ({currency_label})")
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    # plt.show()  # REMOVE: now embedded in UI
 
 def VolumeData(SearchResult: pd.DataFrame, ticker: str):
     plt.figure(figsize=(10, 5))
@@ -121,7 +121,7 @@ def VolumeData(SearchResult: pd.DataFrame, ticker: str):
     plt.title(f"Volume {ticker}")
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    # plt.show()  # REMOVE: now embedded in UI
 
 # ========== ROI (SIP) ==========
 
@@ -223,7 +223,7 @@ def ROI(SearchResult: pd.DataFrame, ticker: str, max_months=None):
     plt.ylabel(f'Price ({CURRENCY})')
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    # plt.show()  # REMOVE: now embedded in UI
 
     # Equity curve (Fixed Amount)
     equity_dates, equity_values = [], []
@@ -242,7 +242,7 @@ def ROI(SearchResult: pd.DataFrame, ticker: str, max_months=None):
     plt.ylabel(f'Portfolio Value ({CURRENCY})')
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    # plt.show()  # REMOVE: now embedded in UI
 
 # ========== MAIN ==========
 def predict_next_month_open_price(SearchResult: pd.DataFrame):
@@ -282,7 +282,7 @@ def predict_next_month_open_price(SearchResult: pd.DataFrame):
     plt.title("Prediksi Harga Open 30 Hari ke Depan (Regresi Linear, Numpy)")
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    # plt.show()  # REMOVE: now embedded in UI
 
     # Tampilkan prediksi hari pertama dan terakhir
     print(f"Prediksi harga open 1 hari ke depan: {y_pred[0]:,.2f}")
