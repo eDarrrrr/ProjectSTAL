@@ -19,6 +19,7 @@ import requests
 import resource
 
 import Algoritm as al
+from mplcanvas import MplCanvas
 
 API_KEY = "AIzaSyCt103_Flr7bvliMztINX-nQYdz6lQaJbo"
 PROJECT_ID = "testemailpass-e20cf"
@@ -369,12 +370,17 @@ class StockDataWindow(QDialog):
         super().__init__(parent)
         uic.loadUi("ui/stockdata.ui", self)
         self.setWindowTitle("Stock Data")
-        # Get long name from yfinance
         long_name = self.get_company_long_name(stock_name)
         self.set_stock_name(long_name)
+        self.stock_df = stock_df
+        self.stock_name = stock_name
+
         # Plot price chart in the 'harga' frame if data is provided
         if stock_df is not None and not stock_df.empty:
             self.plot_price(stock_df, stock_name)
+            self.plot_volume(stock_df, stock_name)
+            self.plot_equity(stock_df, stock_name)
+            self.plot_revenue(stock_name)
         # Show company profile in the profile frame
         self.set_company_profile(stock_name)
 
@@ -392,6 +398,7 @@ class StockDataWindow(QDialog):
             self.namaText.setReadOnly(True)
             self.namaText.setStyleSheet("background: transparent; color: white; border: none; font-size: 35px; font-weight: bold;")
             self.namaText.setText(stock_name)
+            self.namaText.setAlignment(Qt.AlignCenter)
 
     def plot_price(self, df, ticker):
         # Only show data from the last year
@@ -418,6 +425,127 @@ class StockDataWindow(QDialog):
             from PyQt5.QtWidgets import QVBoxLayout
             self.harga.setLayout(QVBoxLayout())
         self.harga.layout().addWidget(canvas)
+
+    def plot_volume(self, df, ticker):
+        # Plot volume in the 'volume' frame
+        if hasattr(self, "volume"):
+            # Remove previous widgets if any
+            layout = self.volume.layout()
+            if not layout:
+                from PyQt5.QtWidgets import QVBoxLayout
+                layout = QVBoxLayout()
+                self.volume.setLayout(layout)
+            for i in reversed(range(layout.count())):
+                item = layout.itemAt(i)
+                widget = item.widget()
+                if widget:
+                    widget.setParent(None)
+            # Plot
+            canvas = MplCanvas(self, width=8, height=4, dpi=100)
+            canvas.axes.plot(df['Date'], df['Volume'], label=f'{ticker} - Volume')
+            canvas.axes.set_xlabel("Date")
+            canvas.axes.set_ylabel("Volume")
+            canvas.axes.set_title(f"Volume {ticker}")
+            canvas.axes.legend()
+            canvas.figure.tight_layout()
+            layout.addWidget(canvas)
+
+    def plot_equity(self, df, ticker):
+        # Plot equity curve (Fixed Amount SIP) in the 'equity' frame
+        if hasattr(self, "equity"):
+            layout = self.equity.layout()
+            if not layout:
+                from PyQt5.QtWidgets import QVBoxLayout
+                layout = QVBoxLayout()
+                self.equity.setLayout(layout)
+            for i in reversed(range(layout.count())):
+                item = layout.itemAt(i)
+                widget = item.widget()
+                if widget:
+                    widget.setParent(None)
+            # Compute equity curve
+            try:
+                price_ref = 'Close' if 'Close' in df.columns else ('Adj Close' if 'Adj Close' in df.columns else None)
+                if price_ref is None:
+                    return
+                dfp = df.copy()
+                dfp = dfp.loc[:, ~dfp.columns.duplicated()].copy()
+                dfp = dfp.sort_values('Date').reset_index(drop=True)
+                SIP_DAY = 30
+                FIXED_AMOUNT = 1_000.0
+                # Pick monthly buy points
+                def pick_monthly_row(g):
+                    hit = g[g['Day'] == SIP_DAY]
+                    return hit.iloc[-1] if len(hit) else g.iloc[-1]
+                buys = (
+                    dfp.groupby(['Year', 'Month'], as_index=False)
+                    .apply(pick_monthly_row)
+                    .reset_index(drop=True)
+                    .sort_values('Date')
+                )
+                buys_2 = buys.copy()
+                buys_2['cash_out'] = FIXED_AMOUNT
+                buys_2['shares_bought'] = buys_2['cash_out'] / buys_2[price_ref]
+                equity_dates, equity_values = [], []
+                shares_cum, buy_idx = 0.0, 0
+                for _, row in dfp.iterrows():
+                    while buy_idx < len(buys_2) and buys_2.iloc[buy_idx]['Date'].date() == row['Date'].date():
+                        shares_cum += float(buys_2.iloc[buy_idx]['shares_bought'])
+                        buy_idx += 1
+                    equity_dates.append(row['Date'])
+                    equity_values.append(shares_cum * float(row[price_ref]))
+                # Plot
+                canvas = MplCanvas(self, width=8, height=4, dpi=100)
+                canvas.axes.plot(equity_dates, equity_values, label=f'Equity (Fixed Amount SIP)')
+                canvas.axes.set_title(f'Equity Curve – Fixed Amount SIP ({ticker})')
+                canvas.axes.set_xlabel('Date')
+                canvas.axes.set_ylabel('Portfolio Value')
+                canvas.axes.legend()
+                canvas.figure.tight_layout()
+                layout.addWidget(canvas)
+            except Exception:
+                pass
+
+    def plot_revenue(self, ticker):
+        # Plot quarterly revenue for last 5 years in the 'revenue' frame
+        if hasattr(self, "revenue"):
+            layout = self.revenue.layout()
+            if not layout:
+                from PyQt5.QtWidgets import QVBoxLayout
+                layout = QVBoxLayout()
+                self.revenue.setLayout(layout)
+            for i in reversed(range(layout.count())):
+                item = layout.itemAt(i)
+                widget = item.widget()
+                if widget:
+                    widget.setParent(None)
+            try:
+                import yfinance as yf
+                yf_ticker = yf.Ticker(ticker)
+                income_stmt = getattr(yf_ticker, "quarterly_income_stmt", None)
+                if income_stmt is None or income_stmt.empty:
+                    income_stmt = getattr(yf_ticker, "quarterly_financials", None)
+                if income_stmt is None or income_stmt.empty:
+                    return
+                for rev_key in ['Total Revenue', 'TotalRevenue', 'totalRevenue']:
+                    if rev_key in income_stmt.index:
+                        revenue_row = income_stmt.loc[rev_key]
+                        break
+                else:
+                    return
+                revenue_row = revenue_row.sort_index(ascending=True)
+                quarters = [str(d)[:7] for d in revenue_row.index][-20:]
+                revenues = revenue_row.values[-20:]
+                canvas = MplCanvas(self, width=8, height=4, dpi=100)
+                canvas.axes.bar(quarters, revenues, color="#2eb11f")
+                canvas.axes.set_xlabel("Quarter")
+                canvas.axes.set_ylabel("Revenue")
+                canvas.axes.set_title(f"Quarterly Revenue for {ticker} (Last 5 Years)")
+                canvas.axes.tick_params(axis='x', rotation=45)
+                canvas.figure.tight_layout()
+                layout.addWidget(canvas)
+            except Exception:
+                pass
 
     def set_company_profile(self, ticker):
         try:
