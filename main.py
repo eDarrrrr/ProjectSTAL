@@ -15,6 +15,7 @@ from pathlib import Path
 from datetime import datetime
 import requests
 
+
 import resource
 
 import Algoritm as al
@@ -30,10 +31,30 @@ class SignUp(QDialog):
         self.signupbutton.clicked.connect(self.signupfunction)
         self.password.setEchoMode(QtWidgets.QLineEdit.Password)
         self.confirmpassword.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.btn_toggle.setCheckable(True)
+        self.btn_toggle.toggled.connect(self._toggle_password)
+        self.btn_toggle2.setCheckable(True)
+        self.btn_toggle2.toggled.connect(self._toggle_confirmpassword)
         self.backbutton.clicked.connect(self.backtologin)
-        self.setFixedSize(414, 700)
+        self.setFixedSize(440, 600)
         self.setWindowFlags(Qt.WindowCloseButtonHint)
-     
+
+    def _toggle_password(self, checked: bool):
+        if checked:
+            self.password.setEchoMode(QLineEdit.Normal)
+            self.btn_toggle.setText("Hide")
+        else:
+            self.password.setEchoMode(QLineEdit.Password)
+            self.btn_toggle.setText("Show")
+    
+    def _toggle_confirmpassword(self, checked: bool):
+        if checked:
+            self.confirmpassword.setEchoMode(QLineEdit.Normal)
+            self.btn_toggle2.setText("Hide")
+        else:
+            self.confirmpassword.setEchoMode(QLineEdit.Password)
+            self.btn_toggle2.setText("Show")
+
     def backtologin(self):
         self.hide()
         self.loginpage = loginpage()
@@ -90,7 +111,7 @@ class SignUp(QDialog):
             if r.status_code != 200:
                 # kalau gagal karena balapan (sudah keburu dipakai), batalkan
                 if r.status_code == 409:  # conflict
-                    QMessageBox.warning(self, "Error", "Username just got taken by someone else. Please choose another.")
+                    QMessageBox.warning(self, "Error", "Username is already taken. Please try another.")
                 else:
                     QMessageBox.warning(self, "Error", f"Failed to reserve username: {r.text}")
                 return
@@ -192,7 +213,7 @@ class loginpage(QDialog):
         self.createaccount.clicked.connect(self.gotosignup)
         self.setWindowFlags(Qt.WindowCloseButtonHint)
         self.forgotpass.clicked.connect(self.on_forgot_password_clicked)
-
+        self.setFixedSize(400, 500)
         self.btn_toggle.setCheckable(True)
         self.btn_toggle.toggled.connect(self._toggle_password)
 
@@ -1018,7 +1039,7 @@ def main():
     }                  
     """)
 
-    window = MainMenu()
+    window = loginpage()
 
     window.show()
     app.exec()
@@ -1026,5 +1047,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

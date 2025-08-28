@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>414</width>
-    <height>481</height>
+    <width>499</width>
+    <height>480</height>
    </rect>
   </property>
   <property name="font">
@@ -41,7 +41,8 @@
 border:none;
 border-bottom:2px solid rgba(105, 118, 132, 255);
 color:rgba(255, 255, 255, 230);
-padding-bottom: 7px;</string>
+padding-bottom: 7px;
+padding-left border-bottom: 10px;</string>
        </property>
        <property name="placeholderText">
         <string>Email</string>
@@ -63,31 +64,180 @@ padding-bottom: 7px;</string>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="password">
+      <widget class="QWidget" name="widget" native="true">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>400</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="styleSheet">
         <string notr="true">background-color:rgba(0, 0, 0, 0);
+</string>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLineEdit" name="password">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color:rgba(0, 0, 0, 0);
 border:none;
 border-bottom:2px solid rgba(105, 118, 132, 255);
 color:rgba(255, 255, 255, 230);
-padding-bottom: 7px;</string>
-       </property>
-       <property name="placeholderText">
-        <string>Password</string>
-       </property>
+padding-bottom: 7px;
+margin: 0px;</string>
+          </property>
+          <property name="placeholderText">
+           <string>Password</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_toggle">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>55</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+	border-color: rgba(255, 255, 255);
+	color: rgb(255, 255, 255);
+	background-color: rgb(0, 0, 0);
+}
+
+QPushButton:hover {
+	background-color: rgb(61, 61, 61);
+}
+
+QPushButton:pressed {
+	background-color: rgb(67, 67, 67);
+}</string>
+          </property>
+          <property name="text">
+           <string>Show</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="confirmpassword">
+      <widget class="QWidget" name="widget_2" native="true">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="styleSheet">
         <string notr="true">background-color:rgba(0, 0, 0, 0);
+</string>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <property name="spacing">
+         <number>6</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLineEdit" name="confirmpassword">
+          <property name="styleSheet">
+           <string notr="true">background-color:rgba(0, 0, 0, 0);
 border:none;
 border-bottom:2px solid rgba(105, 118, 132, 255);
 color:rgba(255, 255, 255, 230);
 padding-bottom: 7px;</string>
-       </property>
-       <property name="placeholderText">
-        <string>Confirm Password</string>
-       </property>
+          </property>
+          <property name="placeholderText">
+           <string>Confirm Password</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_toggle2">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>55</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+	border-color: rgba(255, 255, 255);
+	color: rgb(255, 255, 255);
+	background-color: rgb(0, 0, 0);
+}
+
+QPushButton:hover {
+	background-color: rgb(61, 61, 61);
+}
+
+QPushButton:pressed {
+	background-color: rgb(67, 67, 67);
+}</string>
+          </property>
+          <property name="text">
+           <string>Show</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </item>
      <item>
