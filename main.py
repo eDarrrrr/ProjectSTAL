@@ -1,7 +1,7 @@
 import sys, os, json
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QPushButton, QGraphicsDropShadowEffect, QDialog
 from PyQt5 import uic, QtWidgets
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView, QInputDialog
 from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtGui import QCursor, QColor, QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import pyqtSignal
@@ -349,19 +349,34 @@ class loginpage(QDialog):
             # -> tetap tampilkan pesan sukses generik
         return True
     
+    def ask_email(self):
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Forgot Password")
+        msg.setText("Masukkan email Anda:")
+
+        # tambahkan input field
+        email_input = QLineEdit(msg)
+        email_input.setPlaceholderText("contoh: user@example.com")
+        msg.layout().addWidget(email_input, 1, 1)
+
+        msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        result = msg.exec_()
+
+        if result == QMessageBox.Ok:
+            email = email_input.text().strip()
+            if email:
+                QMessageBox.information(self, "Email Input", f"Anda memasukkan: {email}")
+                return email
+            else:
+                QMessageBox.warning(self, "Error", "Email tidak boleh kosong.")
+                return
+
     def on_forgot_password_clicked(self):
-        email = self.email_input.text().strip()
-        if not email:
-            QMessageBox.warning(self, "Forgot Password", "Masukkan email yang terdaftar.")
-            return
+        email = self.ask_email()
         try:
             self.send_password_reset(email, continue_url="https://appkamu.web.app/reset-done")
         except Exception:
             pass  # sengaja disenyapkan
-        QMessageBox.information(
-            self, "Forgot Password",
-            "Jika email terdaftar, tautan reset telah dikirim. Periksa inbox/spam."
-        )
 
 
 
