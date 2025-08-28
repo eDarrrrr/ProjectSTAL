@@ -1,1 +1,1 @@
-QMessageBox.warning(self, "Error", "Password and confirmation do not match!")
+import yfinance as yf

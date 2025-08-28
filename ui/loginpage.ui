@@ -95,7 +95,7 @@ QPushButton:pressed {
 </string>
        </property>
        <property name="text">
-        <string>show</string>
+        <string>Show</string>
        </property>
       </widget>
      </item>
@@ -115,7 +115,7 @@ QPushButton:pressed {
        </property>
       </spacer>
      </item>
-     <item>
+     <item alignment="Qt::AlignHCenter">
       <widget class="QPushButton" name="createaccount">
        <property name="maximumSize">
         <size>
