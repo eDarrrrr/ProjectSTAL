@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1200</width>
-    <height>800</height>
+    <width>1440</width>
+    <height>790</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Stock Company Viewer (Scrollable)</string>
+   <string>Stock Company Viewer</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_root">
@@ -60,7 +60,20 @@ QLabel#brand{color:#f2f2f2;font:700 18pt &quot;Segoe UI&quot;;} QLabel{color:#d7
         <number>12</number>
        </property>
        <item>
-        <widget class="QLabel" name="brand">
+        <widget class="QLabel" name="label">
+         <property name="font">
+          <font>
+           <pointsize>28</pointsize>
+           <weight>75</weight>
+           <italic>false</italic>
+           <bold>true</bold>
+           <stylestrategy>PreferDefault</stylestrategy>
+           <kerning>true</kerning>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true"/>
+         </property>
          <property name="text">
           <string>Stock Insight</string>
          </property>
@@ -80,23 +93,9 @@ QLabel#brand{color:#f2f2f2;font:700 18pt &quot;Segoe UI&quot;;} QLabel{color:#d7
         </spacer>
        </item>
        <item>
-        <widget class="QLineEdit" name="searchInput">
-         <property name="placeholderText">
-          <string>Search ticker (e.g., AAPL, TSLA, GOOG)...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="btnRefresh">
+        <widget class="QPushButton" name="btnBack">
          <property name="text">
-          <string>Refresh</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="btnWatchlist">
-         <property name="text">
-          <string>Add to Watchlist</string>
+          <string>Go Back</string>
          </property>
         </widget>
        </item>
@@ -118,9 +117,9 @@ QLabel#brand{color:#f2f2f2;font:700 18pt &quot;Segoe UI&quot;;} QLabel{color:#d7
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-495</y>
-         <width>1187</width>
-         <height>1210</height>
+         <y>0</y>
+         <width>1424</width>
+         <height>1280</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="layout_scroll">
@@ -173,13 +172,6 @@ QLabel#tickerPill{color:#eaeaea;background:rgba(255,255,255,0.06);border:1px sol
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_heroTop">
              <item>
-              <widget class="QLabel" name="tickerPill">
-               <property name="text">
-                <string>TICKER</string>
-               </property>
-              </widget>
-             </item>
-             <item>
               <spacer name="heroTopSpacer">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
@@ -196,8 +188,17 @@ QLabel#tickerPill{color:#eaeaea;background:rgba(255,255,255,0.06);border:1px sol
            </item>
            <item>
             <widget class="QLabel" name="companyName">
+             <property name="font">
+              <font>
+               <family>Segoe UI</family>
+               <pointsize>28</pointsize>
+               <weight>99</weight>
+               <italic>false</italic>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
-              <string>Company Name</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:36pt;&quot;&gt;Company Name&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="wordWrap">
               <bool>true</bool>
@@ -245,8 +246,22 @@ QLabel#tickerPill{color:#eaeaea;background:rgba(255,255,255,0.06);border:1px sol
              </property>
              <item>
               <widget class="QLabel" name="statLabel_price">
+               <property name="font">
+                <font>
+                 <kerning>true</kerning>
+                </font>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Plain</enum>
+               </property>
+               <property name="lineWidth">
+                <number>0</number>
+               </property>
                <property name="text">
                 <string>Price</string>
+               </property>
+               <property name="scaledContents">
+                <bool>false</bool>
                </property>
               </widget>
              </item>
@@ -289,23 +304,23 @@ QLabel#tickerPill{color:#eaeaea;background:rgba(255,255,255,0.06);border:1px sol
               <number>14</number>
              </property>
              <item>
-              <widget class="QLabel" name="statLabel_marketcap">
+              <widget class="QLabel" name="lblMarketcap">
                <property name="text">
-                <string>Market Cap</string>
+                <string>Market Cap : </string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="lblMarketCap">
+              <widget class="QLabel" name="lblPBV">
                <property name="text">
-                <string>—</string>
+                <string>PBV : </string>
                </property>
               </widget>
              </item>
              <item>
               <widget class="QLabel" name="lblVolume">
                <property name="text">
-                <string>Volume: —</string>
+                <string>Volume: </string>
                </property>
               </widget>
              </item>
@@ -334,23 +349,23 @@ QLabel#tickerPill{color:#eaeaea;background:rgba(255,255,255,0.06);border:1px sol
               <number>14</number>
              </property>
              <item>
-              <widget class="QLabel" name="statLabel_pe">
+              <widget class="QLabel" name="lblPE">
                <property name="text">
-                <string>P/E Ratio</string>
+                <string>P/E Ratio :</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="lblPE">
+              <widget class="QLabel" name="lblNP">
                <property name="text">
-                <string>—</string>
+                <string>Net Profit : </string>
                </property>
               </widget>
              </item>
              <item>
               <widget class="QLabel" name="lblEPS">
                <property name="text">
-                <string>EPS: —</string>
+                <string>EPS : </string>
                </property>
               </widget>
              </item>
@@ -358,7 +373,7 @@ QLabel#tickerPill{color:#eaeaea;background:rgba(255,255,255,0.06);border:1px sol
            </widget>
           </item>
           <item>
-           <widget class="QFrame" name="card_updated">
+           <widget class="QFrame" name="worthmetercard">
             <property name="styleSheet">
              <string notr="true">QFrame{background:#14161a;border:1px solid rgba(255,255,255,0.06);border-radius:18px;} QLabel{color:#e6e6e6;} QLabel#statLabel{color:#aeb3bd;font:10pt &quot;Segoe UI&quot;;} QLabel#statValue{color:#ffffff;font:700 16pt &quot;Segoe UI&quot;;}</string>
             </property>
@@ -379,23 +394,16 @@ QLabel#tickerPill{color:#eaeaea;background:rgba(255,255,255,0.06);border:1px sol
               <number>14</number>
              </property>
              <item>
-              <widget class="QLabel" name="statLabel_updated">
+              <widget class="QLabel" name="worthmeter">
                <property name="text">
-                <string>Last Updated</string>
+                <string>WorthMeter : </string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="lblUpdated">
+              <widget class="QLabel" name="label_2">
                <property name="text">
-                <string>—</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="lblTimezone">
-               <property name="text">
-                <string>Timezone: —</string>
+                <string>1 is bad and 4 is good</string>
                </property>
               </widget>
              </item>
@@ -403,136 +411,6 @@ QLabel#tickerPill{color:#eaeaea;background:rgba(255,255,255,0.06);border:1px sol
            </widget>
           </item>
          </layout>
-        </item>
-        <item>
-         <widget class="QFrame" name="aboutCard">
-          <property name="styleSheet">
-           <string notr="true">QFrame#aboutCard{background:#121317;border:1px solid rgba(255,255,255,0.06);border-radius:18px;}
-QLabel#aboutTitle{color:#ffffff;font:700 12pt &quot;Segoe UI&quot;;}
-QLabel#infoLabel{color:#aeb3bd;}
-QLabel#infoValue{color:#e6e6e6;font:600 10.5pt &quot;Segoe UI&quot;;}
-</string>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_about">
-           <property name="spacing">
-            <number>10</number>
-           </property>
-           <property name="leftMargin">
-            <number>18</number>
-           </property>
-           <property name="topMargin">
-            <number>18</number>
-           </property>
-           <property name="rightMargin">
-            <number>18</number>
-           </property>
-           <property name="bottomMargin">
-            <number>18</number>
-           </property>
-           <item>
-            <widget class="QLabel" name="aboutTitle">
-             <property name="text">
-              <string>About</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <layout class="QGridLayout" name="gridLayout_about">
-             <property name="horizontalSpacing">
-              <number>14</number>
-             </property>
-             <property name="verticalSpacing">
-              <number>8</number>
-             </property>
-             <item row="0" column="0">
-              <widget class="QLabel" name="lblSectorTitle">
-               <property name="text">
-                <string>Sector</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QLabel" name="lblSector">
-               <property name="text">
-                <string>—</string>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="lblIndustryTitle">
-               <property name="text">
-                <string>Industry</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QLabel" name="lblIndustry">
-               <property name="text">
-                <string>—</string>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="lblCountryTitle">
-               <property name="text">
-                <string>Country</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QLabel" name="lblCountry">
-               <property name="text">
-                <string>—</string>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QLabel" name="lblWebsiteTitle">
-               <property name="text">
-                <string>Website</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="1">
-              <widget class="QLabel" name="lblWebsite">
-               <property name="text">
-                <string>—</string>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="0">
-              <widget class="QLabel" name="lblSummaryTitle">
-               <property name="text">
-                <string>Summary</string>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="1">
-              <widget class="QLabel" name="lblSummary">
-               <property name="text">
-                <string>—</string>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-          </layout>
-         </widget>
         </item>
         <item>
          <widget class="QFrame" name="chartCard">
@@ -566,19 +444,47 @@ QLabel#chartPlaceholder{color:#aeb3bd;font:10pt &quot;Segoe UI&quot;;border:1px 
            </property>
            <item>
             <widget class="QLabel" name="chartTitle">
+             <property name="font">
+              <font>
+               <family>Segoe UI</family>
+               <pointsize>12</pointsize>
+               <weight>87</weight>
+               <italic>false</italic>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Price Chart&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
-              <string>Price Chart</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:24pt;&quot;&gt;Price Chart&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="chartPlaceholder">
-             <property name="text">
-              <string>Chart widget goes here (QChartView / Matplotlib / PyQtGraph)</string>
+            <widget class="QTabWidget" name="tabWidget">
+             <property name="styleSheet">
+              <string notr="true">background:#121317;
+color: rgb(255, 255, 255);</string>
              </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
+             <property name="currentIndex">
+              <number>0</number>
              </property>
+             <widget class="QWidget" name="day">
+              <attribute name="title">
+               <string>1D</string>
+              </attribute>
+             </widget>
+             <widget class="QWidget" name="month">
+              <attribute name="title">
+               <string>1M</string>
+              </attribute>
+             </widget>
+             <widget class="QWidget" name="year">
+              <attribute name="title">
+               <string>1Y</string>
+              </attribute>
+             </widget>
             </widget>
            </item>
           </layout>
@@ -586,6 +492,9 @@ QLabel#chartPlaceholder{color:#aeb3bd;font:10pt &quot;Segoe UI&quot;;border:1px 
         </item>
         <item>
          <widget class="QFrame" name="newsCard">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
           <property name="styleSheet">
            <string notr="true">QFrame#newsCard{background:#121317;border:1px solid rgba(255,255,255,0.06);border-radius:18px;}
 QLabel#newsTitle{color:#ffffff;font:700 12pt &quot;Segoe UI&quot;;}
@@ -610,16 +519,164 @@ QListWidget#listNews{background:#14161a;border:1px solid rgba(255,255,255,0.06);
            </property>
            <item>
             <widget class="QLabel" name="newsTitle">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="font">
+              <font>
+               <family>Segoe UI</family>
+               <pointsize>12</pointsize>
+               <weight>87</weight>
+               <italic>false</italic>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
-              <string>Latest News</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:24pt;&quot;&gt;Another Chart&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QListWidget" name="listNews"/>
+            <widget class="QTabWidget" name="tabWidget_2">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>400</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">background:#121317;
+color: rgb(255, 255, 255);
+border:1px solid rgba(255,255,255,0.06);
+border-radius:10px;
+
+</string>
+             </property>
+             <property name="tabPosition">
+              <enum>QTabWidget::West</enum>
+             </property>
+             <property name="tabShape">
+              <enum>QTabWidget::Triangular</enum>
+             </property>
+             <property name="currentIndex">
+              <number>3</number>
+             </property>
+             <widget class="QWidget" name="revenuetab">
+              <property name="styleSheet">
+               <string notr="true">QFrame#chartCard{background:#121317;border:1px solid rgba(255,255,255,0.06);border-radius:18px;}
+QLabel#chartTitle{color:#ffffff;font:700 12pt &quot;Segoe UI&quot;;}
+QLabel#chartPlaceholder{color:#aeb3bd;font:10pt &quot;Segoe UI&quot;;border:1px dashed rgba(255,255,255,0.15);border-radius:12px;padding:18px;margin:4px;}
+</string>
+              </property>
+              <attribute name="title">
+               <string>Revenue</string>
+              </attribute>
+              <widget class="QFrame" name="revenue">
+               <property name="geometry">
+                <rect>
+                 <x>0</x>
+                 <y>0</y>
+                 <width>1311</width>
+                 <height>401</height>
+                </rect>
+               </property>
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+               </property>
+              </widget>
+             </widget>
+             <widget class="QWidget" name="equitytab">
+              <property name="styleSheet">
+               <string notr="true">QFrame#chartCard{background:#121317;border:1px solid rgba(255,255,255,0.06);border-radius:18px;}
+QLabel#chartTitle{color:#ffffff;font:700 12pt &quot;Segoe UI&quot;;}
+QLabel#chartPlaceholder{color:#aeb3bd;font:10pt &quot;Segoe UI&quot;;border:1px dashed rgba(255,255,255,0.15);border-radius:12px;padding:18px;margin:4px;}
+</string>
+              </property>
+              <attribute name="title">
+               <string>Equity</string>
+              </attribute>
+              <widget class="QFrame" name="equity">
+               <property name="geometry">
+                <rect>
+                 <x>0</x>
+                 <y>0</y>
+                 <width>1311</width>
+                 <height>391</height>
+                </rect>
+               </property>
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+               </property>
+              </widget>
+             </widget>
+             <widget class="QWidget" name="profittab">
+              <attribute name="title">
+               <string>Profit</string>
+              </attribute>
+              <widget class="QFrame" name="profit">
+               <property name="geometry">
+                <rect>
+                 <x>0</x>
+                 <y>0</y>
+                 <width>1311</width>
+                 <height>391</height>
+                </rect>
+               </property>
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+               </property>
+              </widget>
+             </widget>
+             <widget class="QWidget" name="predicttab">
+              <attribute name="title">
+               <string>Predict</string>
+              </attribute>
+              <widget class="QFrame" name="frame">
+               <property name="geometry">
+                <rect>
+                 <x>0</x>
+                 <y>0</y>
+                 <width>1311</width>
+                 <height>391</height>
+                </rect>
+               </property>
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+               </property>
+              </widget>
+             </widget>
+            </widget>
            </item>
           </layout>
          </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
         <item>
          <widget class="QLabel" name="footerNote">
@@ -642,6 +699,8 @@ QListWidget#listNews{background:#14161a;border:1px solid rgba(255,255,255,0.06);
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <resources/>
+ <resources>
+  <include location="../resource.qrc"/>
+ </resources>
  <connections/>
 </ui>
