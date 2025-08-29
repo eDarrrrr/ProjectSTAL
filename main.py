@@ -1,7 +1,7 @@
 import sys, os, json
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QPushButton, QGraphicsDropShadowEffect, QDialog
 from PyQt5 import uic, QtWidgets
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView, QInputDialog
 from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtGui import QCursor, QColor, QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import pyqtSignal
@@ -14,6 +14,7 @@ import yfinance as yf
 from pathlib import Path
 from datetime import datetime
 import requests
+
 
 import resource
 
@@ -30,10 +31,30 @@ class SignUp(QDialog):
         self.signupbutton.clicked.connect(self.signupfunction)
         self.password.setEchoMode(QtWidgets.QLineEdit.Password)
         self.confirmpassword.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.btn_toggle.setCheckable(True)
+        self.btn_toggle.toggled.connect(self._toggle_password)
+        self.btn_toggle2.setCheckable(True)
+        self.btn_toggle2.toggled.connect(self._toggle_confirmpassword)
         self.backbutton.clicked.connect(self.backtologin)
-        self.setFixedSize(414, 700)
+        self.setFixedSize(440, 600)
         self.setWindowFlags(Qt.WindowCloseButtonHint)
-     
+
+    def _toggle_password(self, checked: bool):
+        if checked:
+            self.password.setEchoMode(QLineEdit.Normal)
+            self.btn_toggle.setText("Hide")
+        else:
+            self.password.setEchoMode(QLineEdit.Password)
+            self.btn_toggle.setText("Show")
+    
+    def _toggle_confirmpassword(self, checked: bool):
+        if checked:
+            self.confirmpassword.setEchoMode(QLineEdit.Normal)
+            self.btn_toggle2.setText("Hide")
+        else:
+            self.confirmpassword.setEchoMode(QLineEdit.Password)
+            self.btn_toggle2.setText("Show")
+
     def backtologin(self):
         self.hide()
         self.loginpage = loginpage()
@@ -90,7 +111,7 @@ class SignUp(QDialog):
             if r.status_code != 200:
                 # kalau gagal karena balapan (sudah keburu dipakai), batalkan
                 if r.status_code == 409:  # conflict
-                    QMessageBox.warning(self, "Error", "Username just got taken by someone else. Please choose another.")
+                    QMessageBox.warning(self, "Error", "Username is already taken. Please try another.")
                 else:
                     QMessageBox.warning(self, "Error", f"Failed to reserve username: {r.text}")
                 return
@@ -192,7 +213,7 @@ class loginpage(QDialog):
         self.createaccount.clicked.connect(self.gotosignup)
         self.setWindowFlags(Qt.WindowCloseButtonHint)
         self.forgotpass.clicked.connect(self.on_forgot_password_clicked)
-
+        self.setFixedSize(400, 500)
         self.btn_toggle.setCheckable(True)
         self.btn_toggle.toggled.connect(self._toggle_password)
 
@@ -328,131 +349,180 @@ class loginpage(QDialog):
             # -> tetap tampilkan pesan sukses generik
         return True
     
+    def ask_email(self):
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Forgot Password")
+        msg.setText("Masukkan email Anda:")
+
+        # tambahkan input field
+        email_input = QLineEdit(msg)
+        email_input.setPlaceholderText("contoh: user@example.com")
+        msg.layout().addWidget(email_input, 1, 1)
+        email_input.setStyleSheet("color: white; background-color: #2b2b2b;")
+
+        msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        result = msg.exec_()
+
+        if result == QMessageBox.Ok:
+            email = email_input.text().strip()
+            if email:
+                QMessageBox.information(self, "Email Input", f"Anda memasukkan: {email}")
+                return email
+            else:
+                QMessageBox.warning(self, "Error", "Email tidak boleh kosong.")
+                return
+
     def on_forgot_password_clicked(self):
-        email = self.email_input.text().strip()
-        if not email:
-            QMessageBox.warning(self, "Forgot Password", "Masukkan email yang terdaftar.")
-            return
+        email = self.ask_email()
         try:
             self.send_password_reset(email, continue_url="https://appkamu.web.app/reset-done")
         except Exception:
             pass  # sengaja disenyapkan
-        QMessageBox.information(
-            self, "Forgot Password",
-            "Jika email terdaftar, tautan reset telah dikirim. Periksa inbox/spam."
-        )
 
 
 
-class StockDataWindow(QDialog):
+class StockDataWindow(QMainWindow):
     def __init__(self, stock_name="", stock_df=None, parent=None):
         super().__init__(parent)
-        uic.loadUi("ui/stockdata.ui", self)
+        uic.loadUi("ui/CompanyStockDashboard.ui", self)
         self.setWindowTitle("Stock Data")
-        long_name = self.get_company_long_name(stock_name)
-        self.set_stock_name(long_name)
-        self.stock_df = stock_df
-        self.stock_name = stock_name
-
-        # Plot price chart in the 'harga' frame if data is provided
-        if stock_df is not None and not stock_df.empty:
-            self.plot_price(stock_df, stock_name)
-            self.plot_volume(stock_df, stock_name)
-            self.plot_equity(stock_df, stock_name)
-            self.plot_revenue(stock_name)
-        # Show company profile in the profile frame
-        self.set_company_profile(stock_name)
-
-    def get_company_long_name(self, ticker):
+        # Set company long name, profile, market cap, volume, price, and change
+        long_name, profile, market_cap, volume, pbv, price, change, eps, pe_ratio, net_profit_margin = self.get_company_info(stock_name)
+        # Print company worth score in terminal
         try:
-            import yfinance as yf
-            info = yf.Ticker(ticker).info
-            return info.get("longName", ticker)
-        except Exception:
-            return ticker
+            import Algoritm as al
+            print("\nCalculating company worth score for:")
+            print(f"PBV={pbv}, PE={pe_ratio}, Market Cap={market_cap}")
+            score = al.company_worth_score(pbv, pe_ratio, market_cap)
+            if hasattr(self, "worthmeter"):
+                self.worthmeter.setText(f"Worthmeter : {score}")
+        except Exception as e:
+            print(f"[Error calculating company worth score]: {e}")
+        if hasattr(self, "companyName"):
+            self.companyName.setText(long_name)
+        if hasattr(self, "companySubtitle"):
+            self.companySubtitle.setText(profile)
+        if hasattr(self, "lblMarketcap"):
+            self.lblMarketcap.setText(f"Market Cap: {market_cap}")
+        if hasattr(self, "lblVolume"):
+            self.lblVolume.setText(f"Volume: {volume}")
+        if hasattr(self, "lblPBV"):
+            self.lblPBV.setText(f"PBV: {pbv}")
+        if hasattr(self, "lblPrice"):
+            self.lblPrice.setText(price)
+        if hasattr(self, "lblChange"):
+            self.lblChange.setText(change)
+        if hasattr(self, "lblEPS"):
+            self.lblEPS.setText(f"EPS: {eps}")
+        if hasattr(self, "lblPE"):
+            self.lblPE.setText(f"PE Ratio: {pe_ratio}")
+        if hasattr(self, "lblNP"):
+            self.lblNP.setText(f"Net Profit Margin: {net_profit_margin}")
 
-    def set_stock_name(self, stock_name):
-        # Set the company name in the QTextEdit named "namaText" inside the "nama" frame
-        if hasattr(self, "namaText"):
-            self.namaText.setReadOnly(True)
-            self.namaText.setStyleSheet("background: transparent; color: white; border: none; font-size: 35px; font-weight: bold;")
-            self.namaText.setText(stock_name)
-            self.namaText.setAlignment(Qt.AlignCenter)
+        # Plot price charts in tab widgets: day, month, year
+        if stock_name:
+            self.plot_price_tabs(stock_name)
+            self.plot_another_charts(stock_name)
 
-    def plot_price(self, df, ticker):
-        # Only show data from the last year
-        if not df.empty:
-            last_date = df['Date'].max()
-            one_year_ago = last_date - pd.Timedelta(days=365)
-            df = df[df['Date'] >= one_year_ago]
-        fig, ax = plt.subplots(figsize=(7, 4))
-        ax.plot(df['Date'], df['Open'], label=f'{ticker} - Open Price')
-        ax.set_xlabel("Date")
-        ax.set_ylabel("Price")
-        ax.set_title(f"Harga Open {ticker}")
-        ax.legend()
-        fig.tight_layout()
-        canvas = FigureCanvas(fig)
-        # Remove previous widgets if any
-        for i in reversed(range(self.harga.layout().count() if self.harga.layout() else 0)):
-            item = self.harga.layout().itemAt(i)
-            widget = item.widget()
-            if widget:
-                widget.setParent(None)
-        # Set layout if not set
-        if not self.harga.layout():
-            from PyQt5.QtWidgets import QVBoxLayout
-            self.harga.setLayout(QVBoxLayout())
-        self.harga.layout().addWidget(canvas)
+        # Connect btnBack to go back to MainMenu
+        if hasattr(self, "btnBack"):
+            self.btnBack.clicked.connect(self.go_back_to_main_menu)
 
-    def plot_volume(self, df, ticker):
-        # Plot volume in the 'volume' frame
-        if hasattr(self, "volume"):
-            # Remove previous widgets if any
-            layout = self.volume.layout()
+    def go_back_to_main_menu(self):
+        # Show MainMenu and close this window
+        from PyQt5 import uic
+        from PyQt5.QtWidgets import QMainWindow
+        # Try to find parent MainMenu or create new if not found
+        parent = self.parent()
+        if parent is not None and parent.__class__.__name__ == "MainMenu":
+            parent.show()
+        else:
+            from main import MainMenu
+            self.main_menu = MainMenu()
+            self.main_menu.show()
+        self.close()
+
+    def plot_another_charts(self, ticker):
+        yf_ticker = yf.Ticker(ticker)
+        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+        import matplotlib.pyplot as plt
+        from PyQt5.QtWidgets import QVBoxLayout
+        import pandas as pd
+        def set_canvas(widget, fig):
+            layout = widget.layout()
             if not layout:
-                from PyQt5.QtWidgets import QVBoxLayout
                 layout = QVBoxLayout()
-                self.volume.setLayout(layout)
+                widget.setLayout(layout)
             for i in reversed(range(layout.count())):
                 item = layout.itemAt(i)
-                widget = item.widget()
-                if widget:
-                    widget.setParent(None)
-            # Plot
-            canvas = MplCanvas(self, width=8, height=4, dpi=100)
-            canvas.axes.plot(df['Date'], df['Volume'], label=f'{ticker} - Volume')
-            canvas.axes.set_xlabel("Date")
-            canvas.axes.set_ylabel("Volume")
-            canvas.axes.set_title(f"Volume {ticker}")
-            canvas.axes.legend()
-            canvas.figure.tight_layout()
+                w = item.widget()
+                if w:
+                    w.setParent(None)
+            canvas = FigureCanvas(fig)
             layout.addWidget(canvas)
 
-    def plot_equity(self, df, ticker):
-        # Plot equity curve (Fixed Amount SIP) in the 'equity' frame
-        if hasattr(self, "equity"):
-            layout = self.equity.layout()
-            if not layout:
-                from PyQt5.QtWidgets import QVBoxLayout
-                layout = QVBoxLayout()
-                self.equity.setLayout(layout)
-            for i in reversed(range(layout.count())):
-                item = layout.itemAt(i)
-                widget = item.widget()
-                if widget:
-                    widget.setParent(None)
-            # Compute equity curve
-            try:
-                price_ref = 'Close' if 'Close' in df.columns else ('Adj Close' if 'Adj Close' in df.columns else None)
-                if price_ref is None:
-                    return
+        # Revenue
+        try:
+            fin = yf_ticker.quarterly_financials
+            if fin is not None and not fin.empty:
+                rev = None
+                for key in ['Total Revenue', 'TotalRevenue', 'totalRevenue']:
+                    if key in fin.index:
+                        rev = fin.loc[key]
+                        break
+                if rev is not None:
+                    rev = rev.sort_index(ascending=True)
+                    rev = rev[-8:]
+                    fig, ax = plt.subplots(figsize=(6,3))
+                    ax.bar([str(d)[:7] for d in rev.index], rev.values, color="#2eb11f")
+                    ax.set_title(f"Quarterly Revenue")
+                    ax.set_xlabel("Quarter")
+                    ax.set_ylabel("Revenue")
+                    ax.tick_params(axis='x', rotation=45)
+                    fig.tight_layout()
+                    widget = getattr(self, "revenue", None)
+                    if widget:
+                        set_canvas(widget, fig)
+        except Exception:
+            pass
+
+        # Profit (Net Income)
+        try:
+            fin = yf_ticker.quarterly_financials
+            if fin is not None and not fin.empty:
+                profit = None
+                for key in ['Net Income', 'NetIncome', 'netIncome']:
+                    if key in fin.index:
+                        profit = fin.loc[key]
+                        break
+                if profit is not None:
+                    profit = profit.sort_index(ascending=True)
+                    profit = profit[-8:]
+                    fig, ax = plt.subplots(figsize=(6,3))
+                    ax.bar([str(d)[:7] for d in profit.index], profit.values, color="#1f77b4")
+                    ax.set_title(f"Quarterly Net Profit")
+                    ax.set_xlabel("Quarter")
+                    ax.set_ylabel("Net Profit")
+                    ax.tick_params(axis='x', rotation=45)
+                    fig.tight_layout()
+                    widget = getattr(self, "profit", None)
+                    if widget:
+                        set_canvas(widget, fig)
+        except Exception:
+            pass
+
+        # Equity curve (Fixed Amount SIP) using Algoritm.py
+        try:
+            import Algoritm as al
+            df = al.download_one_ticker(ticker)
+            # Equity curve logic from Algoritm.py ROI()
+            price_ref = 'Close' if 'Close' in df.columns else ('Adj Close' if 'Adj Close' in df.columns else None)
+            if price_ref is not None:
                 dfp = df.copy()
                 dfp = dfp.loc[:, ~dfp.columns.duplicated()].copy()
                 dfp = dfp.sort_values('Date').reset_index(drop=True)
                 SIP_DAY = 30
                 FIXED_AMOUNT = 1_000.0
-                # Pick monthly buy points
                 def pick_monthly_row(g):
                     hit = g[g['Day'] == SIP_DAY]
                     return hit.iloc[-1] if len(hit) else g.iloc[-1]
@@ -473,90 +543,377 @@ class StockDataWindow(QDialog):
                         buy_idx += 1
                     equity_dates.append(row['Date'])
                     equity_values.append(shares_cum * float(row[price_ref]))
-                # Plot
-                canvas = MplCanvas(self, width=8, height=4, dpi=100)
-                canvas.axes.plot(equity_dates, equity_values, label=f'Equity (Fixed Amount SIP)')
-                canvas.axes.set_title(f'Equity Curve – Fixed Amount SIP ({ticker})')
-                canvas.axes.set_xlabel('Date')
-                canvas.axes.set_ylabel('Portfolio Value')
-                canvas.axes.legend()
-                canvas.figure.tight_layout()
-                layout.addWidget(canvas)
-            except Exception:
-                pass
+                import matplotlib.pyplot as plt
+                fig, ax = plt.subplots(figsize=(6,3))
+                ax.plot(equity_dates, equity_values, label='Equity (Fixed Amount SIP)')
+                ax.set_title(f'Equity Curve – Fixed Amount SIP ({ticker})')
+                ax.set_xlabel('Date')
+                ax.set_ylabel('Portfolio Value')
+                ax.legend()
+                fig.tight_layout()
+                widget = getattr(self, "equity", None)
+                if widget:
+                    set_canvas(widget, fig)
+        except Exception:
+            pass
 
-    def plot_revenue(self, ticker):
-        # Plot quarterly revenue for last 5 years in the 'revenue' frame
-        if hasattr(self, "revenue"):
-            layout = self.revenue.layout()
+        # Predict next month open price using Algoritm.py and embed in predicttab's frame
+        try:
+            import Algoritm as al
+            df = al.download_one_ticker(ticker)
+            result = al.predict_next_month_open_price(df)
+            if result is not None:
+                future_dates, y_pred = result
+                import matplotlib.pyplot as plt
+                last_30 = df.sort_values('Date').reset_index(drop=True).tail(30)
+                fig, ax = plt.subplots(figsize=(6,3))
+                ax.plot(last_30['Date'], last_30['Open'], label='Open Price (Last 30 days)')
+                ax.plot(future_dates, y_pred, label='Predicted Open Price (Next 30 days)', linestyle='--')
+                ax.set_xlabel("Date")
+                ax.set_ylabel("Open Price")
+                ax.set_title("Prediksi Harga Open 30 Hari ke Depan (Regresi Linear, Numpy)")
+                ax.legend()
+                fig.tight_layout()
+                # Find the frame inside the predicttab tab
+                predicttab = getattr(self, "predicttab", None)
+                predict_frame = None
+                if predicttab is not None:
+                    # Find the QFrame named "frame" inside predicttab
+                    predict_frame = predicttab.findChild(type(predicttab), "frame")
+                if predict_frame is not None:
+                    set_canvas(predict_frame, fig)
+        except Exception:
+            pass
+
+    def plot_price_tabs(self, ticker):
+        import yfinance as yf
+        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+        import matplotlib.pyplot as plt
+        import datetime
+        # Helper to clear and add canvas to a widget
+        def set_canvas(widget, fig):
+            layout = widget.layout()
             if not layout:
                 from PyQt5.QtWidgets import QVBoxLayout
                 layout = QVBoxLayout()
-                self.revenue.setLayout(layout)
+                widget.setLayout(layout)
+            # Remove old widgets
             for i in reversed(range(layout.count())):
                 item = layout.itemAt(i)
-                widget = item.widget()
-                if widget:
-                    widget.setParent(None)
+                w = item.widget()
+                if w:
+                    w.setParent(None)
+            canvas = FigureCanvas(fig)
+            layout.addWidget(canvas)
+
+        # Download data for different periods
+        periods = {
+            'day': ('1d', '1m'),
+            'month': ('1mo', '30m'),
+            'year': ('1y', '1d'),
+        }
+        for tab_name, (period, interval) in periods.items():
             try:
-                import yfinance as yf
-                yf_ticker = yf.Ticker(ticker)
-                income_stmt = getattr(yf_ticker, "quarterly_income_stmt", None)
-                if income_stmt is None or income_stmt.empty:
-                    income_stmt = getattr(yf_ticker, "quarterly_financials", None)
-                if income_stmt is None or income_stmt.empty:
-                    return
-                for rev_key in ['Total Revenue', 'TotalRevenue', 'totalRevenue']:
-                    if rev_key in income_stmt.index:
-                        revenue_row = income_stmt.loc[rev_key]
-                        break
-                else:
-                    return
-                revenue_row = revenue_row.sort_index(ascending=True)
-                quarters = [str(d)[:7] for d in revenue_row.index][-20:]
-                revenues = revenue_row.values[-20:]
-                canvas = MplCanvas(self, width=8, height=4, dpi=100)
-                canvas.axes.bar(quarters, revenues, color="#2eb11f")
-                canvas.axes.set_xlabel("Quarter")
-                canvas.axes.set_ylabel("Revenue")
-                canvas.axes.set_title(f"Quarterly Revenue for {ticker} (Last 5 Years)")
-                canvas.axes.tick_params(axis='x', rotation=45)
-                canvas.figure.tight_layout()
-                layout.addWidget(canvas)
+                df = yf.download(ticker, period=period, interval=interval, progress=False)
+                if df.empty:
+                    continue
+                fig, ax = plt.subplots(figsize=(6, 3))
+                ax.plot(df.index, df['Close'], label='Close Price')
+                ax.set_title(f"{ticker} Price - {tab_name.capitalize()}")
+                ax.set_xlabel("Date")
+                ax.set_ylabel("Price")
+                ax.legend()
+                fig.tight_layout()
+                # Add to the correct tab widget
+                widget = getattr(self, tab_name, None)
+                if widget:
+                    set_canvas(widget, fig)
             except Exception:
                 pass
 
-    def set_company_profile(self, ticker):
+    def get_company_info(self, ticker):
         try:
             import yfinance as yf
             info = yf.Ticker(ticker).info
-            profile_text = []
-            profile_text.append(f"<b>Name:</b> {info.get('longName', '-')}")
-            profile_text.append(f"<b>Symbol:</b> {info.get('symbol', '-')}")
-            profile_text.append(f"<b>Exchange:</b> {info.get('exchange', '-')}")
-            profile_text.append(f"<b>Sector:</b> {info.get('sector', '-')}")
-            profile_text.append(f"<b>Industry:</b> {info.get('industry', '-')}")
-            profile_text.append(f"<b>Country:</b> {info.get('country', '-')}")
-            profile_text.append(f"<b>Website:</b> <a href='{info.get('website', '-')}' style='color:#00aaff'>{info.get('website', '-')}</a>")
-            # profile_text.append(f"<b>Description:</b><br>{info.get('longBusinessSummary', '-')}")
-            """profile_text.append("<hr><b>Key Statistics</b>")
-            profile_text.append(f"Market Cap: {info.get('marketCap', '-')}")
-            profile_text.append(f"Shares Outstanding: {info.get('sharesOutstanding', '-')}")
-            profile_text.append(f"Trailing P/E: {info.get('trailingPE', '-')}")
-            profile_text.append(f"Forward P/E: {info.get('forwardPE', '-')}")
-            profile_text.append(f"PEG Ratio: {info.get('pegRatio', '-')}")
-            profile_text.append(f"Price to Book: {info.get('priceToBook', '-')}")
-            profile_text.append(f"Dividend Yield: {info.get('dividendYield', '-')}")
-            profile_text.append(f"52 Week High: {info.get('fiftyTwoWeekHigh', '-')}")
-            profile_text.append(f"52 Week Low: {info.get('fiftyTwoWeekLow', '-')}")
-            profile_text.append(f"Beta: {info.get('beta', '-')}")
-            profile_text.append(f"Average Volume: {info.get('averageVolume', '-')}")"""
-            html = "<br>".join(profile_text)
-        except Exception as e:
-            html = f"Could not fetch company profile/statistics: {e}"
-        # Set the text in the QTextEdit if it exists
-        if hasattr(self, "profileText"):
-            self.profileText.setHtml(html)
+            long_name = info.get("longName", ticker)
+            # Compose profile string: symbol, exchange, sector, industry, country
+            symbol = info.get("symbol", "")
+            exchange = info.get("exchange", "")
+            sector = info.get("sector", "")
+            industry = info.get("industry", "")
+            country = info.get("country", "")
+            profile = " | ".join([v for v in [symbol, exchange, sector, industry, country] if v])
+            # Market Cap formatting
+            market_cap_val = info.get("marketCap", None)
+            if market_cap_val is not None:
+                if market_cap_val >= 1e12:
+                    market_cap = f"${market_cap_val/1e12:.2f}T"
+                elif market_cap_val >= 1e9:
+                    market_cap = f"${market_cap_val/1e9:.2f}B"
+                elif market_cap_val >= 1e6:
+                    market_cap = f"${market_cap_val/1e6:.2f}M"
+                else:
+                    market_cap = f"${market_cap_val:,}"
+            else:
+                market_cap = "—"
+            # Volume formatting
+            volume_val = info.get("volume", None)
+            if volume_val is not None:
+                if volume_val >= 1e9:
+                    volume = f"{volume_val/1e9:.2f}B"
+                elif volume_val >= 1e6:
+                    volume = f"{volume_val/1e6:.2f}M"
+                elif volume_val >= 1e3:
+                    volume = f"{volume_val/1e3:.2f}K"
+                else:
+                    volume = f"{volume_val:,}"
+            else:
+                volume = "—"
+            # PBV formatting
+            pbv_val = info.get("priceToBook", None)
+            if pbv_val is not None:
+                pbv = f"{pbv_val:.2f}"
+            else:
+                pbv = "—"
+            # EPS formatting
+            eps_val = info.get("trailingEps", None)
+            if eps_val is not None:
+                eps = f"{eps_val:.2f}"
+            else:
+                eps = "—"
+            # PE Ratio formatting
+            pe_val = info.get("trailingPE", None)
+            if pe_val is None:
+                pe_val = info.get("forwardPE", None)
+            if pe_val is not None:
+                pe_ratio = f"{pe_val:.2f}"
+            else:
+                pe_ratio = "—"
+            # Net Profit Margin formatting
+            net_profit_margin_val = info.get("netMargins", None)
+            if net_profit_margin_val is not None:
+                net_profit_margin = f"{net_profit_margin_val*100:.2f}%"
+            else:
+                net_profit_margin = "—"
+            # Price and change
+            price_val = info.get("regularMarketPrice", None)
+            prev_close = info.get("regularMarketPreviousClose", None)
+            if price_val is not None:
+                price = f"${price_val:,.2f}"
+            else:
+                price = "—"
+            if price_val is not None and prev_close is not None and prev_close != 0:
+                pct_change = ((price_val - prev_close) / prev_close) * 100
+                change = f"{pct_change:+.2f}%"
+            else:
+                change = "—"
+            return long_name, profile, market_cap, volume, pbv, price, change, eps, pe_ratio, net_profit_margin
+        except Exception:
+            return ticker, "", "—", "—", "—", "—", "—", "—", "—", "—"
+
+    #     # Plot price chart in the 'harga' frame if data is provided
+    #     if stock_df is not None and not stock_df.empty:
+    #         self.plot_price(stock_df, stock_name)
+    #         self.plot_volume(stock_df, stock_name)
+    #         self.plot_equity(stock_df, stock_name)
+    #         self.plot_revenue(stock_df, stock_name)
+    #     # Show company profile in the profile frame
+    #     self.set_company_profile(stock_name)
+
+    # def get_company_long_name(self, ticker):
+    #     try:
+    #         import yfinance as yf
+    #         info = yf.Ticker(ticker).info
+    #         return info.get("longName", ticker)
+    #     except Exception:
+    #         return ticker
+
+    # def set_stock_name(self, stock_name):
+    #     # Set the company name in the QTextEdit named "namaText" inside the "nama" frame
+    #     if hasattr(self, "namaText"):
+    #         self.namaText.setReadOnly(True)
+    #         self.namaText.setStyleSheet("background: transparent; color: white; border: none; font-size: 35px; font-weight: bold;")
+    #         self.namaText.setText(stock_name)
+    #         self.namaText.setAlignment(Qt.AlignCenter)
+
+    # def plot_price(self, df, ticker):
+    #     # Only show data from the last year
+    #     if not df.empty:
+    #         last_date = df['Date'].max()
+    #         one_year_ago = last_date - pd.Timedelta(days=365)
+    #         df = df[df['Date'] >= one_year_ago]
+    #     fig, ax = plt.subplots(figsize=(7, 4))
+    #     ax.plot(df['Date'], df['Open'], label=f'{ticker} - Open Price')
+    #     ax.set_xlabel("Date")
+    #     ax.set_ylabel("Price")
+    #     ax.set_title(f"Harga Open {ticker}")
+    #     ax.legend()
+    #     fig.tight_layout()
+    #     canvas = FigureCanvas(fig)
+    #     # Remove previous widgets if any
+    #     for i in reversed(range(self.harga.layout().count() if self.harga.layout() else 0)):
+    #         item = self.harga.layout().itemAt(i)
+    #         widget = item.widget()
+    #         if widget:
+    #             widget.setParent(None)
+    #     # Set layout if not set
+    #     if not self.harga.layout():
+    #         from PyQt5.QtWidgets import QVBoxLayout
+    #         self.harga.setLayout(QVBoxLayout())
+    #     self.harga.layout().addWidget(canvas)
+
+    # def plot_volume(self, df, ticker):
+    #     # Plot volume in the 'volume' frame
+    #     if hasattr(self, "volume"):
+    #         # Remove previous widgets if any
+    #         layout = self.volume.layout()
+    #         if not layout:
+    #             from PyQt5.QtWidgets import QVBoxLayout
+    #             layout = QVBoxLayout()
+    #             self.volume.setLayout(layout)
+    #         for i in reversed(range(layout.count())):
+    #             item = layout.itemAt(i)
+    #             widget = item.widget()
+    #             if widget:
+    #                 widget.setParent(None)
+    #         # Plot
+    #         canvas = MplCanvas(self, width=8, height=4, dpi=100)
+    #         canvas.axes.plot(df['Date'], df['Volume'], label=f'{ticker} - Volume')
+    #         canvas.axes.set_xlabel("Date")
+    #         canvas.axes.set_ylabel("Volume")
+    #         canvas.axes.set_title(f"Volume {ticker}")
+    #         canvas.axes.legend()
+    #         canvas.figure.tight_layout()
+    #         layout.addWidget(canvas)
+
+    # def plot_equity(self, df, ticker):
+    #     # Plot equity curve (Fixed Amount SIP) in the 'equity' frame
+    #     if hasattr(self, "equity"):
+    #         layout = self.equity.layout()
+    #         if not layout:
+    #             from PyQt5.QtWidgets import QVBoxLayout
+    #             layout = QVBoxLayout()
+    #             self.equity.setLayout(layout)
+    #         for i in reversed(range(layout.count())):
+    #             item = layout.itemAt(i)
+    #             widget = item.widget()
+    #             if widget:
+    #                 widget.setParent(None)
+    #         # Compute equity curve
+    #         try:
+    #             price_ref = 'Close' if 'Close' in df.columns else ('Adj Close' if 'Adj Close' in df.columns else None)
+    #             if price_ref is None:
+    #                 return
+    #             dfp = df.copy()
+    #             dfp = dfp.loc[:, ~dfp.columns.duplicated()].copy()
+    #             dfp = dfp.sort_values('Date').reset_index(drop=True)
+    #             SIP_DAY = 30
+    #             FIXED_AMOUNT = 1_000.0
+    #             # Pick monthly buy points
+    #             def pick_monthly_row(g):
+    #                 hit = g[g['Day'] == SIP_DAY]
+    #                 return hit.iloc[-1] if len(hit) else g.iloc[-1]
+    #             buys = (
+    #                 dfp.groupby(['Year', 'Month'], as_index=False)
+    #                 .apply(pick_monthly_row)
+    #                 .reset_index(drop=True)
+    #                 .sort_values('Date')
+    #             )
+    #             buys_2 = buys.copy()
+    #             buys_2['cash_out'] = FIXED_AMOUNT
+    #             buys_2['shares_bought'] = buys_2['cash_out'] / buys_2[price_ref]
+    #             equity_dates, equity_values = [], []
+    #             shares_cum, buy_idx = 0.0, 0
+    #             for _, row in dfp.iterrows():
+    #                 while buy_idx < len(buys_2) and buys_2.iloc[buy_idx]['Date'].date() == row['Date'].date():
+    #                     shares_cum += float(buys_2.iloc[buy_idx]['shares_bought'])
+    #                     buy_idx += 1
+    #                 equity_dates.append(row['Date'])
+    #                 equity_values.append(shares_cum * float(row[price_ref]))
+    #             # Plot
+    #             canvas = MplCanvas(self, width=8, height=4, dpi=100)
+    #             canvas.axes.plot(equity_dates, equity_values, label=f'Equity (Fixed Amount SIP)')
+    #             canvas.axes.set_title(f'Equity Curve – Fixed Amount SIP ({ticker})')
+    #             canvas.axes.set_xlabel('Date')
+    #             canvas.axes.set_ylabel('Portfolio Value')
+    #             canvas.axes.legend()
+    #             canvas.figure.tight_layout()
+    #             layout.addWidget(canvas)
+    #         except Exception:
+    #             pass
+
+    # def plot_revenue(self, ticker):
+    #     # Plot quarterly revenue for last 5 years in the 'revenue' frame
+    #     if hasattr(self, "revenue"):
+    #         layout = self.revenue.layout()
+    #         if not layout:
+    #             from PyQt5.QtWidgets import QVBoxLayout
+    #             layout = QVBoxLayout()
+    #             self.revenue.setLayout(layout)
+    #         for i in reversed(range(layout.count())):
+    #             item = layout.itemAt(i)
+    #             widget = item.widget()
+    #             if widget:
+    #                 widget.setParent(None)
+    #         try:
+    #             import yfinance as yf
+    #             yf_ticker = yf.Ticker(ticker)
+    #             income_stmt = getattr(yf_ticker, "quarterly_income_stmt", None)
+    #             if income_stmt is None or income_stmt.empty:
+    #                 income_stmt = getattr(yf_ticker, "quarterly_financials", None)
+    #             if income_stmt is None or income_stmt.empty:
+    #                 return
+    #             for rev_key in ['Total Revenue', 'TotalRevenue', 'totalRevenue']:
+    #                 if rev_key in income_stmt.index:
+    #                     revenue_row = income_stmt.loc[rev_key]
+    #                     break
+    #             else:
+    #                 return
+    #             revenue_row = revenue_row.sort_index(ascending=True)
+    #             quarters = [str(d)[:7] for d in revenue_row.index][-20:]
+    #             revenues = revenue_row.values[-20:]
+    #             canvas = MplCanvas(self, width=8, height=4, dpi=100)
+    #             canvas.axes.bar(quarters, revenues, color="#2eb11f")
+    #             canvas.axes.set_xlabel("Quarter")
+    #             canvas.axes.set_ylabel("Revenue")
+    #             canvas.axes.set_title(f"Quarterly Revenue for {ticker} (Last 5 Years)")
+    #             canvas.axes.tick_params(axis='x', rotation=45)
+    #             canvas.figure.tight_layout()
+    #             layout.addWidget(canvas)
+    #         except Exception:
+    #             pass
+
+    # def set_company_profile(self, ticker):
+    #     try:
+    #         import yfinance as yf
+    #         info = yf.Ticker(ticker).info
+    #         profile_text = []
+    #         profile_text.append(f"<b>Name:</b> {info.get('longName', '-')}")
+    #         profile_text.append(f"<b>Symbol:</b> {info.get('symbol', '-')}")
+    #         profile_text.append(f"<b>Exchange:</b> {info.get('exchange', '-')}")
+    #         profile_text.append(f"<b>Sector:</b> {info.get('sector', '-')}")
+    #         profile_text.append(f"<b>Industry:</b> {info.get('industry', '-')}")
+    #         profile_text.append(f"<b>Country:</b> {info.get('country', '-')}")
+    #         profile_text.append(f"<b>Website:</b> <a href='{info.get('website', '-')}' style='color:#00aaff'>{info.get('website', '-')}</a>")
+    #         # profile_text.append(f"<b>Description:</b><br>{info.get('longBusinessSummary', '-')}")
+    #         """profile_text.append("<hr><b>Key Statistics</b>")
+    #         profile_text.append(f"Market Cap: {info.get('marketCap', '-')}")
+    #         profile_text.append(f"Shares Outstanding: {info.get('sharesOutstanding', '-')}")
+    #         profile_text.append(f"Trailing P/E: {info.get('trailingPE', '-')}")
+    #         profile_text.append(f"Forward P/E: {info.get('forwardPE', '-')}")
+    #         profile_text.append(f"PEG Ratio: {info.get('pegRatio', '-')}")
+    #         profile_text.append(f"Price to Book: {info.get('priceToBook', '-')}")
+    #         profile_text.append(f"Dividend Yield: {info.get('dividendYield', '-')}")
+    #         profile_text.append(f"52 Week High: {info.get('fiftyTwoWeekHigh', '-')}")
+    #         profile_text.append(f"52 Week Low: {info.get('fiftyTwoWeekLow', '-')}")
+    #         profile_text.append(f"Beta: {info.get('beta', '-')}")
+    #         profile_text.append(f"Average Volume: {info.get('averageVolume', '-')}")"""
+    #         html = "<br>".join(profile_text)
+    #     except Exception as e:
+    #         html = f"Could not fetch company profile/statistics: {e}"
+    #     # Set the text in the QTextEdit if it exists
+    #     if hasattr(self, "profileText"):
+    #         self.profileText.setHtml(html)
 
 
 class MainMenu(QMainWindow):
@@ -716,7 +1073,7 @@ class MainMenu(QMainWindow):
             # Show the StockDataWindow popup with DataFrame
             _, stock_df, ticker = hasilPencarian
             self.stock_data_window = StockDataWindow(stock_name=ticker, stock_df=stock_df, parent=self)
-            self.stock_data_window.exec_()
+            self.stock_data_window.show()
         else:
             self.HasilSearchLabel.setText(f"{hasilPencarian}" )
 
@@ -1018,7 +1375,7 @@ def main():
     }                  
     """)
 
-    window = MainMenu()
+    window = loginpage()
 
     window.show()
     app.exec()
@@ -1026,5 +1383,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
