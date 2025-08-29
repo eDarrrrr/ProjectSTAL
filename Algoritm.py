@@ -1,16 +1,7 @@
-# pip install yfinance pandas matplotlib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import yfinance as yf
-
-
-# Data visualized with matplotlib in this module:
-# - Stock Open price chart (last year)
-# - Stock Volume chart (all available data)
-# - ROI/SIP simulation: price chart with buy points (monthly), equity curve (portfolio value over time)
-# - Predicted Open price for next 30 days (regression line)
-# (All plots are generated using matplotlib)
 
 
 SUFFIXES = ["", ".JK", ".NS", ".BO", ".L", ".TO", ".AX", ".HK", ".T", ".SI", ".DE", ".PA", ".SW", ".MI", ".MC"]
@@ -111,7 +102,7 @@ def StockData(SearchResult: pd.DataFrame, ticker: str, currency_label="$"):
     plt.title(f"Harga Open {ticker} ({currency_label})")
     plt.legend()
     plt.tight_layout()
-    # plt.show()  # REMOVE: now embedded in UI
+        # No plt.show() here; handled by UI embedding
 
 def VolumeData(SearchResult: pd.DataFrame, ticker: str):
     plt.figure(figsize=(10, 5))
@@ -121,7 +112,7 @@ def VolumeData(SearchResult: pd.DataFrame, ticker: str):
     plt.title(f"Volume {ticker}")
     plt.legend()
     plt.tight_layout()
-    # plt.show()  # REMOVE: now embedded in UI
+        # No plt.show() here; handled by UI embedding
 
 # ========== ROI (SIP) ==========
 
@@ -202,7 +193,7 @@ def ROI(SearchResult: pd.DataFrame, ticker: str, max_months=None):
     print("\n-- MODE 1: 1 lembar/bulan --")
     print(f"Total lembar  : {total_shares_1:.0f}")
     print(f"Total modal   : {total_cost_1:,.2f} {CURRENCY}")
-    print(f"Nilai akhir   : {final_value_1:,.2f} {CURRENCY}")
+            # No plt.show() here; handled by UI embedding
     print(f"ROI           : {roi_1*100:.2f}%")
     print(f"CAGR (approx) : {cagr_1*100:.2f}% / tahun")
 
@@ -221,7 +212,7 @@ def ROI(SearchResult: pd.DataFrame, ticker: str, max_months=None):
     plt.title(f'{price_ref} & Monthly SIP Buy Points ({CURRENCY})')
     plt.xlabel('Date')
     plt.ylabel(f'Price ({CURRENCY})')
-    plt.legend()
+            # No plt.show() here; handled by UI embedding
     plt.tight_layout()
     # plt.show()  # REMOVE: now embedded in UI
 
@@ -245,7 +236,99 @@ def ROI(SearchResult: pd.DataFrame, ticker: str, max_months=None):
     # plt.show()  # REMOVE: now embedded in UI
 
 # ========== MAIN ==========
+
+def company_worth_score(pbv, pe, market_cap):
+    """
+    Calculate a simple 'worth it' score (1-4) based on PBV, P/E, and Market Cap.
+    Returns the score and prints an explanation.
+    """
+    score_details = []
+    score = 0
+    # PBV scoring
+    try:
+        pbv_val = float(pbv)
+        if pbv_val < 1:
+            score += 4
+            score_details.append("PBV < 1 (Undervalued): +4")
+        elif pbv_val < 1.5:
+            score += 3
+            score_details.append("PBV < 1.5: +3")
+        elif pbv_val < 3:
+            score += 2
+            score_details.append("PBV < 3: +2")
+        else:
+            score += 1
+            score_details.append("PBV >= 3: +1")
+    except:
+        score_details.append("PBV not available: +0")
+
+    # P/E scoring
+    try:
+        pe_val = float(pe)
+        if pe_val <= 0:
+            score += 1
+            score_details.append("P/E <= 0: +1 (unprofitable or negative earnings)")
+        elif pe_val < 10:
+            score += 3
+            score_details.append("P/E < 10: +3 (cheap)")
+        elif pe_val < 20:
+            score += 4
+            score_details.append("P/E 10-20: +4 (healthy)")
+        elif pe_val < 35:
+            score += 2
+            score_details.append("P/E 20-35: +2 (expensive)")
+        else:
+            score += 1
+            score_details.append("P/E >= 35: +1 (very expensive)")
+    except:
+        score_details.append("P/E not available: +0")
+
+    # Market Cap scoring (very simple: bigger is safer, but not always better for growth)
+    try:
+        # Accept market cap as string like "$1.23B" or "$456M"
+        mc = str(market_cap).replace("$", "").replace(",", "").strip().upper()
+        if "T" in mc:
+            mc_val = float(mc.replace("T", "")) * 1e12
+        elif "B" in mc:
+            mc_val = float(mc.replace("B", "")) * 1e9
+        elif "M" in mc:
+            mc_val = float(mc.replace("M", "")) * 1e6
+        else:
+            mc_val = float(mc)
+        if mc_val >= 1e11:
+            score += 4
+            score_details.append("Market Cap >= $100B: +4 (very large)")
+        elif mc_val >= 1e10:
+            score += 3
+            score_details.append("Market Cap >= $10B: +3 (large)")
+        elif mc_val >= 1e9:
+            score += 2
+            score_details.append("Market Cap >= $1B: +2 (mid)")
+        else:
+            score += 1
+            score_details.append("Market Cap < $1B: +1 (small)")
+    except:
+        score_details.append("Market Cap not available: +0")
+
+    # Average and scale to 1-4
+    n_metrics = 3
+    raw_score = score / n_metrics
+    scaled_score = min(4, max(1, round(raw_score)))
+    print("\n=== Company Worth Score ===")
+    for d in score_details:
+        print(d)
+    print(f"Raw score: {raw_score:.2f}  |  Final Score (1-4): {scaled_score}")
+    if scaled_score == 4:
+        print("Interpretation: Excellent value and safety based on these metrics.")
+    elif scaled_score == 3:
+        print("Interpretation: Good value and/or safety.")
+    elif scaled_score == 2:
+        print("Interpretation: Average or mixed signals.")
+    else:
+        print("Interpretation: Risky or overvalued based on these metrics.")
+    return scaled_score
 def predict_next_month_open_price(SearchResult: pd.DataFrame):
+
     """
     Prediksi harga open untuk 30 hari ke depan menggunakan regresi linear
     berdasarkan 30 hari harga open terakhir, hanya dengan numpy.
@@ -282,7 +365,7 @@ def predict_next_month_open_price(SearchResult: pd.DataFrame):
     plt.title("Prediksi Harga Open 30 Hari ke Depan (Regresi Linear, Numpy)")
     plt.legend()
     plt.tight_layout()
-    # plt.show()  # REMOVE: now embedded in UI
+        # No plt.show() here; handled by UI embedding
 
     # Tampilkan prediksi hari pertama dan terakhir
     print(f"Prediksi harga open 1 hari ke depan: {y_pred[0]:,.2f}")
@@ -355,7 +438,7 @@ def plot_quarterly_revenue_last_5_years(ticker: str):
         plt.title(f"Quarterly Revenue for {ticker} (Last 5 Years)")
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.show()
+        # No plt.show() here; handled by UI embedding
         # Print revenue values
         for q, r in zip(quarters, revenues):
             print(f"Revenue {q}: {r:,.0f}")
