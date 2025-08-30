@@ -285,7 +285,7 @@ QFrame.card {
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>0</y>
+         <y>-323</y>
          <width>1089</width>
          <height>1372</height>
         </rect>
@@ -459,7 +459,7 @@ QFrame.card {
            <string notr="true">background-color: transparent;</string>
           </property>
           <property name="currentIndex">
-           <number>0</number>
+           <number>1</number>
           </property>
           <widget class="QWidget" name="PageDashboard">
            <widget class="QWidget" name="layoutWidget">
@@ -585,7 +585,20 @@ padding-bottom: 7px;</string>
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">background-color: rgb(13, 181, 67);</string>
+                <string notr="true">QPushButton{
+background-color: #212121;
+color: rgb(255, 255, 255);
+border-radius: 16px;
+
+}
+
+QPushButton:hover {
+    background-color: #1DB954;
+}
+
+QPushButton:pressed {
+    background-color: #17a444;
+}</string>
                </property>
                <property name="text">
                 <string>Search</string>
@@ -624,7 +637,7 @@ color: rgb(255, 255, 255);</string>
             <property name="geometry">
              <rect>
               <x>105</x>
-              <y>61</y>
+              <y>60</y>
               <width>681</width>
               <height>151</height>
              </rect>
@@ -724,9 +737,9 @@ color: rgb(255, 255, 255);</string>
             <property name="geometry">
              <rect>
               <x>0</x>
-              <y>90</y>
+              <y>100</y>
               <width>991</width>
-              <height>51</height>
+              <height>61</height>
              </rect>
             </property>
             <property name="styleSheet">
