@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 from pathlib import Path
 from datetime import datetime
-import requests
+import requests, re
 
 
 import resource
@@ -349,6 +349,36 @@ class loginpage(QDialog):
             # -> tetap tampilkan pesan sukses generik
         return True
     
+    def firebase_send_password_reset(self, email: str):
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={API_KEY}"
+        payload = {
+            "requestType": "PASSWORD_RESET",
+            "email": email
+        }
+        r = requests.post(url, json=payload, timeout=15)
+        j = r.json()
+        if r.status_code != 200:
+            raise RuntimeError(j.get("error", {}).get("message", r.text))
+        return True
+
+    def firebase_verify_reset_code(self, oob_code: str) -> str:
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:resetPassword?key={API_KEY}"
+        payload = {"oobCode": oob_code}
+        r = requests.post(url, json=payload, timeout=15)
+        j = r.json()
+        if r.status_code != 200:
+            raise RuntimeError(j.get("error", {}).get("message", r.text))
+        return j.get("email", "")
+
+    def firebase_confirm_reset(self, oob_code: str, new_password: str):
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:resetPassword?key={API_KEY}"
+        payload = {"oobCode": oob_code, "newPassword": new_password}
+        r = requests.post(url, json=payload, timeout=15)
+        j = r.json()
+        if r.status_code != 200:
+            raise RuntimeError(j.get("error", {}).get("message", r.text))
+        return True
+    
     def ask_email(self):
         msg = QMessageBox(self)
         msg.setWindowTitle("Forgot Password")
@@ -373,11 +403,142 @@ class loginpage(QDialog):
                 return
 
     def on_forgot_password_clicked(self):
-        email = self.ask_email()
+        # 1. minta email
+        dlg = QInputDialog(self)
+        dlg.setWindowTitle("Forgot Password")
+        dlg.setLabelText("Masukkan email:")
+        dlg.setTextEchoMode(QLineEdit.Normal)
+        dlg.setStyleSheet("""
+            QLineEdit {
+                color: white;
+                background-color: #2b2b2b;
+                border: 1px solid #555;
+                padding: 4px;
+            }
+            QLabel {
+                color: white;
+            }
+            QPushButton {
+                color: white;
+                background-color: #444;
+                border: 1px solid #666;
+                padding: 4px 10px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #555;
+            }
+            QPushButton:pressed {
+                background-color: #333;
+            }
+        """)
+        ok = dlg.exec_()
+        email = dlg.textValue().strip()
+        if not ok or not email:
+            return
+
+        # 2. kirim email reset
         try:
-            self.send_password_reset(email, continue_url="https://appkamu.web.app/reset-done")
-        except Exception:
-            pass  # sengaja disenyapkan
+            self.firebase_send_password_reset(email)
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Gagal kirim reset: {e}")
+            return
+
+        QMessageBox.information(self, "Email terkirim",
+            "Kami sudah mengirim email reset password jika email terdaftar.\n"
+            "Silakan buka email, lalu copy link tersebut atau klik link tersebut.\n"
+            "Cek folder spam jika tidak ada di inbox.")
+
+        # 3. minta user paste kode/link dari email
+        dlg = QInputDialog(self)
+        dlg.setWindowTitle("Kode Reset")
+        dlg.setLabelText("Paste link/kode dari email:")
+        dlg.setTextEchoMode(QLineEdit.Normal)
+        dlg.setStyleSheet("""
+            QLineEdit {
+                color: white;
+                background-color: #2b2b2b;
+                border: 1px solid #555;
+                padding: 4px;
+            }
+            QLabel {
+                color: white;
+            }
+            QPushButton {
+                color: white;
+                background-color: #444;
+                border: 1px solid #666;
+                padding: 4px 10px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #555;
+            }
+            QPushButton:pressed {
+                background-color: #333;
+            }
+""")
+        ok = dlg.exec_()
+        code = dlg.textValue().strip()
+        if not ok or not code:
+            return
+
+        import re
+        m = re.search(r"[?&]oobCode=([^&]+)", code)
+        oob = m.group(1) if m else code
+
+        try:
+            email_from_code = self.firebase_verify_reset_code(oob)
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Kode tidak valid: {e}")
+            return
+
+        # 4. minta password baru
+        for title in ["Password Baru", "Konfirmasi Password"]:
+            dlg = QInputDialog(self)
+            dlg.setWindowTitle(title)
+            dlg.setLabelText(title)
+            dlg.setTextEchoMode(QLineEdit.Password)
+            dlg.setStyleSheet("""
+                QLineEdit {
+                    color: white;
+                    background-color: #2b2b2b;
+                    border: 1px solid #555;
+                    padding: 4px;
+                }
+                QLabel {
+                    color: white;
+                }
+                QPushButton {
+                    color: white;
+                    background-color: #444;
+                    border: 1px solid #666;
+                    padding: 4px 10px;
+                    border-radius: 4px;
+                }
+                QPushButton:hover {
+                    background-color: #555;
+                }
+                QPushButton:pressed {
+                    background-color: #333;
+                }
+            """)
+            ok = dlg.exec_()
+            if not ok: return
+            if title == "Password Baru":
+                new1 = dlg.textValue()
+            else:
+                new2 = dlg.textValue()
+
+        if new1 != new2:
+            QMessageBox.warning(self, "Error", "Password tidak cocok.")
+            return
+
+        try:
+            self.firebase_confirm_reset(oob, new1)
+            QMessageBox.information(self, "Sukses", "Password berhasil direset.")
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Gagal reset: {e}")
 
 
 
@@ -711,209 +872,6 @@ class StockDataWindow(QMainWindow):
         except Exception:
             return ticker, "", "—", "—", "—", "—", "—", "—", "—", "—"
 
-    #     # Plot price chart in the 'harga' frame if data is provided
-    #     if stock_df is not None and not stock_df.empty:
-    #         self.plot_price(stock_df, stock_name)
-    #         self.plot_volume(stock_df, stock_name)
-    #         self.plot_equity(stock_df, stock_name)
-    #         self.plot_revenue(stock_df, stock_name)
-    #     # Show company profile in the profile frame
-    #     self.set_company_profile(stock_name)
-
-    # def get_company_long_name(self, ticker):
-    #     try:
-    #         import yfinance as yf
-    #         info = yf.Ticker(ticker).info
-    #         return info.get("longName", ticker)
-    #     except Exception:
-    #         return ticker
-
-    # def set_stock_name(self, stock_name):
-    #     # Set the company name in the QTextEdit named "namaText" inside the "nama" frame
-    #     if hasattr(self, "namaText"):
-    #         self.namaText.setReadOnly(True)
-    #         self.namaText.setStyleSheet("background: transparent; color: white; border: none; font-size: 35px; font-weight: bold;")
-    #         self.namaText.setText(stock_name)
-    #         self.namaText.setAlignment(Qt.AlignCenter)
-
-    # def plot_price(self, df, ticker):
-    #     # Only show data from the last year
-    #     if not df.empty:
-    #         last_date = df['Date'].max()
-    #         one_year_ago = last_date - pd.Timedelta(days=365)
-    #         df = df[df['Date'] >= one_year_ago]
-    #     fig, ax = plt.subplots(figsize=(7, 4))
-    #     ax.plot(df['Date'], df['Open'], label=f'{ticker} - Open Price')
-    #     ax.set_xlabel("Date")
-    #     ax.set_ylabel("Price")
-    #     ax.set_title(f"Harga Open {ticker}")
-    #     ax.legend()
-    #     fig.tight_layout()
-    #     canvas = FigureCanvas(fig)
-    #     # Remove previous widgets if any
-    #     for i in reversed(range(self.harga.layout().count() if self.harga.layout() else 0)):
-    #         item = self.harga.layout().itemAt(i)
-    #         widget = item.widget()
-    #         if widget:
-    #             widget.setParent(None)
-    #     # Set layout if not set
-    #     if not self.harga.layout():
-    #         from PyQt5.QtWidgets import QVBoxLayout
-    #         self.harga.setLayout(QVBoxLayout())
-    #     self.harga.layout().addWidget(canvas)
-
-    # def plot_volume(self, df, ticker):
-    #     # Plot volume in the 'volume' frame
-    #     if hasattr(self, "volume"):
-    #         # Remove previous widgets if any
-    #         layout = self.volume.layout()
-    #         if not layout:
-    #             from PyQt5.QtWidgets import QVBoxLayout
-    #             layout = QVBoxLayout()
-    #             self.volume.setLayout(layout)
-    #         for i in reversed(range(layout.count())):
-    #             item = layout.itemAt(i)
-    #             widget = item.widget()
-    #             if widget:
-    #                 widget.setParent(None)
-    #         # Plot
-    #         canvas = MplCanvas(self, width=8, height=4, dpi=100)
-    #         canvas.axes.plot(df['Date'], df['Volume'], label=f'{ticker} - Volume')
-    #         canvas.axes.set_xlabel("Date")
-    #         canvas.axes.set_ylabel("Volume")
-    #         canvas.axes.set_title(f"Volume {ticker}")
-    #         canvas.axes.legend()
-    #         canvas.figure.tight_layout()
-    #         layout.addWidget(canvas)
-
-    # def plot_equity(self, df, ticker):
-    #     # Plot equity curve (Fixed Amount SIP) in the 'equity' frame
-    #     if hasattr(self, "equity"):
-    #         layout = self.equity.layout()
-    #         if not layout:
-    #             from PyQt5.QtWidgets import QVBoxLayout
-    #             layout = QVBoxLayout()
-    #             self.equity.setLayout(layout)
-    #         for i in reversed(range(layout.count())):
-    #             item = layout.itemAt(i)
-    #             widget = item.widget()
-    #             if widget:
-    #                 widget.setParent(None)
-    #         # Compute equity curve
-    #         try:
-    #             price_ref = 'Close' if 'Close' in df.columns else ('Adj Close' if 'Adj Close' in df.columns else None)
-    #             if price_ref is None:
-    #                 return
-    #             dfp = df.copy()
-    #             dfp = dfp.loc[:, ~dfp.columns.duplicated()].copy()
-    #             dfp = dfp.sort_values('Date').reset_index(drop=True)
-    #             SIP_DAY = 30
-    #             FIXED_AMOUNT = 1_000.0
-    #             # Pick monthly buy points
-    #             def pick_monthly_row(g):
-    #                 hit = g[g['Day'] == SIP_DAY]
-    #                 return hit.iloc[-1] if len(hit) else g.iloc[-1]
-    #             buys = (
-    #                 dfp.groupby(['Year', 'Month'], as_index=False)
-    #                 .apply(pick_monthly_row)
-    #                 .reset_index(drop=True)
-    #                 .sort_values('Date')
-    #             )
-    #             buys_2 = buys.copy()
-    #             buys_2['cash_out'] = FIXED_AMOUNT
-    #             buys_2['shares_bought'] = buys_2['cash_out'] / buys_2[price_ref]
-    #             equity_dates, equity_values = [], []
-    #             shares_cum, buy_idx = 0.0, 0
-    #             for _, row in dfp.iterrows():
-    #                 while buy_idx < len(buys_2) and buys_2.iloc[buy_idx]['Date'].date() == row['Date'].date():
-    #                     shares_cum += float(buys_2.iloc[buy_idx]['shares_bought'])
-    #                     buy_idx += 1
-    #                 equity_dates.append(row['Date'])
-    #                 equity_values.append(shares_cum * float(row[price_ref]))
-    #             # Plot
-    #             canvas = MplCanvas(self, width=8, height=4, dpi=100)
-    #             canvas.axes.plot(equity_dates, equity_values, label=f'Equity (Fixed Amount SIP)')
-    #             canvas.axes.set_title(f'Equity Curve – Fixed Amount SIP ({ticker})')
-    #             canvas.axes.set_xlabel('Date')
-    #             canvas.axes.set_ylabel('Portfolio Value')
-    #             canvas.axes.legend()
-    #             canvas.figure.tight_layout()
-    #             layout.addWidget(canvas)
-    #         except Exception:
-    #             pass
-
-    # def plot_revenue(self, ticker):
-    #     # Plot quarterly revenue for last 5 years in the 'revenue' frame
-    #     if hasattr(self, "revenue"):
-    #         layout = self.revenue.layout()
-    #         if not layout:
-    #             from PyQt5.QtWidgets import QVBoxLayout
-    #             layout = QVBoxLayout()
-    #             self.revenue.setLayout(layout)
-    #         for i in reversed(range(layout.count())):
-    #             item = layout.itemAt(i)
-    #             widget = item.widget()
-    #             if widget:
-    #                 widget.setParent(None)
-    #         try:
-    #             import yfinance as yf
-    #             yf_ticker = yf.Ticker(ticker)
-    #             income_stmt = getattr(yf_ticker, "quarterly_income_stmt", None)
-    #             if income_stmt is None or income_stmt.empty:
-    #                 income_stmt = getattr(yf_ticker, "quarterly_financials", None)
-    #             if income_stmt is None or income_stmt.empty:
-    #                 return
-    #             for rev_key in ['Total Revenue', 'TotalRevenue', 'totalRevenue']:
-    #                 if rev_key in income_stmt.index:
-    #                     revenue_row = income_stmt.loc[rev_key]
-    #                     break
-    #             else:
-    #                 return
-    #             revenue_row = revenue_row.sort_index(ascending=True)
-    #             quarters = [str(d)[:7] for d in revenue_row.index][-20:]
-    #             revenues = revenue_row.values[-20:]
-    #             canvas = MplCanvas(self, width=8, height=4, dpi=100)
-    #             canvas.axes.bar(quarters, revenues, color="#2eb11f")
-    #             canvas.axes.set_xlabel("Quarter")
-    #             canvas.axes.set_ylabel("Revenue")
-    #             canvas.axes.set_title(f"Quarterly Revenue for {ticker} (Last 5 Years)")
-    #             canvas.axes.tick_params(axis='x', rotation=45)
-    #             canvas.figure.tight_layout()
-    #             layout.addWidget(canvas)
-    #         except Exception:
-    #             pass
-
-    # def set_company_profile(self, ticker):
-    #     try:
-    #         import yfinance as yf
-    #         info = yf.Ticker(ticker).info
-    #         profile_text = []
-    #         profile_text.append(f"<b>Name:</b> {info.get('longName', '-')}")
-    #         profile_text.append(f"<b>Symbol:</b> {info.get('symbol', '-')}")
-    #         profile_text.append(f"<b>Exchange:</b> {info.get('exchange', '-')}")
-    #         profile_text.append(f"<b>Sector:</b> {info.get('sector', '-')}")
-    #         profile_text.append(f"<b>Industry:</b> {info.get('industry', '-')}")
-    #         profile_text.append(f"<b>Country:</b> {info.get('country', '-')}")
-    #         profile_text.append(f"<b>Website:</b> <a href='{info.get('website', '-')}' style='color:#00aaff'>{info.get('website', '-')}</a>")
-    #         # profile_text.append(f"<b>Description:</b><br>{info.get('longBusinessSummary', '-')}")
-    #         """profile_text.append("<hr><b>Key Statistics</b>")
-    #         profile_text.append(f"Market Cap: {info.get('marketCap', '-')}")
-    #         profile_text.append(f"Shares Outstanding: {info.get('sharesOutstanding', '-')}")
-    #         profile_text.append(f"Trailing P/E: {info.get('trailingPE', '-')}")
-    #         profile_text.append(f"Forward P/E: {info.get('forwardPE', '-')}")
-    #         profile_text.append(f"PEG Ratio: {info.get('pegRatio', '-')}")
-    #         profile_text.append(f"Price to Book: {info.get('priceToBook', '-')}")
-    #         profile_text.append(f"Dividend Yield: {info.get('dividendYield', '-')}")
-    #         profile_text.append(f"52 Week High: {info.get('fiftyTwoWeekHigh', '-')}")
-    #         profile_text.append(f"52 Week Low: {info.get('fiftyTwoWeekLow', '-')}")
-    #         profile_text.append(f"Beta: {info.get('beta', '-')}")
-    #         profile_text.append(f"Average Volume: {info.get('averageVolume', '-')}")"""
-    #         html = "<br>".join(profile_text)
-    #     except Exception as e:
-    #         html = f"Could not fetch company profile/statistics: {e}"
-    #     # Set the text in the QTextEdit if it exists
-    #     if hasattr(self, "profileText"):
-    #         self.profileText.setHtml(html)
 
 
 class MainMenu(QMainWindow):
@@ -1063,6 +1021,9 @@ class MainMenu(QMainWindow):
 
     def searchbar(self):
         SearchBar = self.SearchBar.text()
+        if not SearchBar:
+            self.HasilSearchLabel.setText("Error, Input pencarian tidak boleh kosong!")
+            return
         self.HasilSearchLabel.setText(f"Searching for: {SearchBar}")
         QApplication.processEvents()
 
