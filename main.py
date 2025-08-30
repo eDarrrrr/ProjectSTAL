@@ -386,17 +386,337 @@ class StockDataWindow(QMainWindow):
         super().__init__(parent)
         uic.loadUi("ui/CompanyStockDashboard.ui", self)
         self.setWindowTitle("Stock Data")
-        # long_name = self.get_company_long_name(stock_name)
-        # self.set_stock_name(long_name)
-        # self.stock_df = stock_df
-        # self.stock_name = stock_name
+        # Set company long name, profile, market cap, volume, price, and change
+        long_name, profile, market_cap, volume, pbv, price, change, eps, pe_ratio, net_profit_margin = self.get_company_info(stock_name)
+        # Print company worth score in terminal
+        try:
+            import Algoritm as al
+            print("\nCalculating company worth score for:")
+            print(f"PBV={pbv}, PE={pe_ratio}, Market Cap={market_cap}")
+            score = al.company_worth_score(pbv, pe_ratio, market_cap)
+            if hasattr(self, "worthmeter"):
+                self.worthmeter.setText(f"Worthmeter : {score}")
+        except Exception as e:
+            print(f"[Error calculating company worth score]: {e}")
+        if hasattr(self, "companyName"):
+            self.companyName.setText(long_name)
+        if hasattr(self, "companySubtitle"):
+            self.companySubtitle.setText(profile)
+        if hasattr(self, "lblMarketcap"):
+            self.lblMarketcap.setText(f"Market Cap: {market_cap}")
+        if hasattr(self, "lblVolume"):
+            self.lblVolume.setText(f"Volume: {volume}")
+        if hasattr(self, "lblPBV"):
+            self.lblPBV.setText(f"PBV: {pbv}")
+        if hasattr(self, "lblPrice"):
+            self.lblPrice.setText(price)
+        if hasattr(self, "lblChange"):
+            self.lblChange.setText(change)
+        if hasattr(self, "lblEPS"):
+            self.lblEPS.setText(f"EPS: {eps}")
+        if hasattr(self, "lblPE"):
+            self.lblPE.setText(f"PE Ratio: {pe_ratio}")
+        if hasattr(self, "lblNP"):
+            self.lblNP.setText(f"Net Profit Margin: {net_profit_margin}")
+
+        # Plot price charts in tab widgets: day, month, year
+        if stock_name:
+            self.plot_price_tabs(stock_name)
+            self.plot_another_charts(stock_name)
+
+        # Connect btnBack to go back to MainMenu
+        if hasattr(self, "btnBack"):
+            self.btnBack.clicked.connect(self.go_back_to_main_menu)
+
+    def go_back_to_main_menu(self):
+        # Show MainMenu and close this window
+        from PyQt5 import uic
+        from PyQt5.QtWidgets import QMainWindow
+        # Try to find parent MainMenu or create new if not found
+        parent = self.parent()
+        if parent is not None and parent.__class__.__name__ == "MainMenu":
+            parent.show()
+        else:
+            from main import MainMenu
+            self.main_menu = MainMenu()
+            self.main_menu.show()
+        self.close()
+
+    def plot_another_charts(self, ticker):
+        yf_ticker = yf.Ticker(ticker)
+        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+        import matplotlib.pyplot as plt
+        from PyQt5.QtWidgets import QVBoxLayout
+        import pandas as pd
+        def set_canvas(widget, fig):
+            layout = widget.layout()
+            if not layout:
+                layout = QVBoxLayout()
+                widget.setLayout(layout)
+            for i in reversed(range(layout.count())):
+                item = layout.itemAt(i)
+                w = item.widget()
+                if w:
+                    w.setParent(None)
+            canvas = FigureCanvas(fig)
+            layout.addWidget(canvas)
+
+        # Revenue
+        try:
+            fin = yf_ticker.quarterly_financials
+            if fin is not None and not fin.empty:
+                rev = None
+                for key in ['Total Revenue', 'TotalRevenue', 'totalRevenue']:
+                    if key in fin.index:
+                        rev = fin.loc[key]
+                        break
+                if rev is not None:
+                    rev = rev.sort_index(ascending=True)
+                    rev = rev[-8:]
+                    fig, ax = plt.subplots(figsize=(6,3))
+                    ax.bar([str(d)[:7] for d in rev.index], rev.values, color="#2eb11f")
+                    ax.set_title(f"Quarterly Revenue")
+                    ax.set_xlabel("Quarter")
+                    ax.set_ylabel("Revenue")
+                    ax.tick_params(axis='x', rotation=45)
+                    fig.tight_layout()
+                    widget = getattr(self, "revenue", None)
+                    if widget:
+                        set_canvas(widget, fig)
+        except Exception:
+            pass
+
+        # Profit (Net Income)
+        try:
+            fin = yf_ticker.quarterly_financials
+            if fin is not None and not fin.empty:
+                profit = None
+                for key in ['Net Income', 'NetIncome', 'netIncome']:
+                    if key in fin.index:
+                        profit = fin.loc[key]
+                        break
+                if profit is not None:
+                    profit = profit.sort_index(ascending=True)
+                    profit = profit[-8:]
+                    fig, ax = plt.subplots(figsize=(6,3))
+                    ax.bar([str(d)[:7] for d in profit.index], profit.values, color="#1f77b4")
+                    ax.set_title(f"Quarterly Net Profit")
+                    ax.set_xlabel("Quarter")
+                    ax.set_ylabel("Net Profit")
+                    ax.tick_params(axis='x', rotation=45)
+                    fig.tight_layout()
+                    widget = getattr(self, "profit", None)
+                    if widget:
+                        set_canvas(widget, fig)
+        except Exception:
+            pass
+
+        # Equity curve (Fixed Amount SIP) using Algoritm.py
+        try:
+            import Algoritm as al
+            df = al.download_one_ticker(ticker)
+            # Equity curve logic from Algoritm.py ROI()
+            price_ref = 'Close' if 'Close' in df.columns else ('Adj Close' if 'Adj Close' in df.columns else None)
+            if price_ref is not None:
+                dfp = df.copy()
+                dfp = dfp.loc[:, ~dfp.columns.duplicated()].copy()
+                dfp = dfp.sort_values('Date').reset_index(drop=True)
+                SIP_DAY = 30
+                FIXED_AMOUNT = 1_000.0
+                def pick_monthly_row(g):
+                    hit = g[g['Day'] == SIP_DAY]
+                    return hit.iloc[-1] if len(hit) else g.iloc[-1]
+                buys = (
+                    dfp.groupby(['Year', 'Month'], as_index=False)
+                    .apply(pick_monthly_row)
+                    .reset_index(drop=True)
+                    .sort_values('Date')
+                )
+                buys_2 = buys.copy()
+                buys_2['cash_out'] = FIXED_AMOUNT
+                buys_2['shares_bought'] = buys_2['cash_out'] / buys_2[price_ref]
+                equity_dates, equity_values = [], []
+                shares_cum, buy_idx = 0.0, 0
+                for _, row in dfp.iterrows():
+                    while buy_idx < len(buys_2) and buys_2.iloc[buy_idx]['Date'].date() == row['Date'].date():
+                        shares_cum += float(buys_2.iloc[buy_idx]['shares_bought'])
+                        buy_idx += 1
+                    equity_dates.append(row['Date'])
+                    equity_values.append(shares_cum * float(row[price_ref]))
+                import matplotlib.pyplot as plt
+                fig, ax = plt.subplots(figsize=(6,3))
+                ax.plot(equity_dates, equity_values, label='Equity (Fixed Amount SIP)')
+                ax.set_title(f'Equity Curve – Fixed Amount SIP ({ticker})')
+                ax.set_xlabel('Date')
+                ax.set_ylabel('Portfolio Value')
+                ax.legend()
+                fig.tight_layout()
+                widget = getattr(self, "equity", None)
+                if widget:
+                    set_canvas(widget, fig)
+        except Exception:
+            pass
+
+        # Predict next month open price using Algoritm.py and embed in predicttab's frame
+        try:
+            import Algoritm as al
+            df = al.download_one_ticker(ticker)
+            result = al.predict_next_month_open_price(df)
+            if result is not None:
+                future_dates, y_pred = result
+                import matplotlib.pyplot as plt
+                last_30 = df.sort_values('Date').reset_index(drop=True).tail(30)
+                fig, ax = plt.subplots(figsize=(6,3))
+                ax.plot(last_30['Date'], last_30['Open'], label='Open Price (Last 30 days)')
+                ax.plot(future_dates, y_pred, label='Predicted Open Price (Next 30 days)', linestyle='--')
+                ax.set_xlabel("Date")
+                ax.set_ylabel("Open Price")
+                ax.set_title("Prediksi Harga Open 30 Hari ke Depan (Regresi Linear, Numpy)")
+                ax.legend()
+                fig.tight_layout()
+                # Find the frame inside the predicttab tab
+                predicttab = getattr(self, "predicttab", None)
+                predict_frame = None
+                if predicttab is not None:
+                    # Find the QFrame named "frame" inside predicttab
+                    predict_frame = predicttab.findChild(type(predicttab), "frame")
+                if predict_frame is not None:
+                    set_canvas(predict_frame, fig)
+        except Exception:
+            pass
+
+    def plot_price_tabs(self, ticker):
+        import yfinance as yf
+        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+        import matplotlib.pyplot as plt
+        import datetime
+        # Helper to clear and add canvas to a widget
+        def set_canvas(widget, fig):
+            layout = widget.layout()
+            if not layout:
+                from PyQt5.QtWidgets import QVBoxLayout
+                layout = QVBoxLayout()
+                widget.setLayout(layout)
+            # Remove old widgets
+            for i in reversed(range(layout.count())):
+                item = layout.itemAt(i)
+                w = item.widget()
+                if w:
+                    w.setParent(None)
+            canvas = FigureCanvas(fig)
+            layout.addWidget(canvas)
+
+        # Download data for different periods
+        periods = {
+            'day': ('1d', '1m'),
+            'month': ('1mo', '30m'),
+            'year': ('1y', '1d'),
+        }
+        for tab_name, (period, interval) in periods.items():
+            try:
+                df = yf.download(ticker, period=period, interval=interval, progress=False)
+                if df.empty:
+                    continue
+                fig, ax = plt.subplots(figsize=(6, 3))
+                ax.plot(df.index, df['Close'], label='Close Price')
+                ax.set_title(f"{ticker} Price - {tab_name.capitalize()}")
+                ax.set_xlabel("Date")
+                ax.set_ylabel("Price")
+                ax.legend()
+                fig.tight_layout()
+                # Add to the correct tab widget
+                widget = getattr(self, tab_name, None)
+                if widget:
+                    set_canvas(widget, fig)
+            except Exception:
+                pass
+
+    def get_company_info(self, ticker):
+        try:
+            import yfinance as yf
+            info = yf.Ticker(ticker).info
+            long_name = info.get("longName", ticker)
+            # Compose profile string: symbol, exchange, sector, industry, country
+            symbol = info.get("symbol", "")
+            exchange = info.get("exchange", "")
+            sector = info.get("sector", "")
+            industry = info.get("industry", "")
+            country = info.get("country", "")
+            profile = " | ".join([v for v in [symbol, exchange, sector, industry, country] if v])
+            # Market Cap formatting
+            market_cap_val = info.get("marketCap", None)
+            if market_cap_val is not None:
+                if market_cap_val >= 1e12:
+                    market_cap = f"${market_cap_val/1e12:.2f}T"
+                elif market_cap_val >= 1e9:
+                    market_cap = f"${market_cap_val/1e9:.2f}B"
+                elif market_cap_val >= 1e6:
+                    market_cap = f"${market_cap_val/1e6:.2f}M"
+                else:
+                    market_cap = f"${market_cap_val:,}"
+            else:
+                market_cap = "—"
+            # Volume formatting
+            volume_val = info.get("volume", None)
+            if volume_val is not None:
+                if volume_val >= 1e9:
+                    volume = f"{volume_val/1e9:.2f}B"
+                elif volume_val >= 1e6:
+                    volume = f"{volume_val/1e6:.2f}M"
+                elif volume_val >= 1e3:
+                    volume = f"{volume_val/1e3:.2f}K"
+                else:
+                    volume = f"{volume_val:,}"
+            else:
+                volume = "—"
+            # PBV formatting
+            pbv_val = info.get("priceToBook", None)
+            if pbv_val is not None:
+                pbv = f"{pbv_val:.2f}"
+            else:
+                pbv = "—"
+            # EPS formatting
+            eps_val = info.get("trailingEps", None)
+            if eps_val is not None:
+                eps = f"{eps_val:.2f}"
+            else:
+                eps = "—"
+            # PE Ratio formatting
+            pe_val = info.get("trailingPE", None)
+            if pe_val is None:
+                pe_val = info.get("forwardPE", None)
+            if pe_val is not None:
+                pe_ratio = f"{pe_val:.2f}"
+            else:
+                pe_ratio = "—"
+            # Net Profit Margin formatting
+            net_profit_margin_val = info.get("netMargins", None)
+            if net_profit_margin_val is not None:
+                net_profit_margin = f"{net_profit_margin_val*100:.2f}%"
+            else:
+                net_profit_margin = "—"
+            # Price and change
+            price_val = info.get("regularMarketPrice", None)
+            prev_close = info.get("regularMarketPreviousClose", None)
+            if price_val is not None:
+                price = f"${price_val:,.2f}"
+            else:
+                price = "—"
+            if price_val is not None and prev_close is not None and prev_close != 0:
+                pct_change = ((price_val - prev_close) / prev_close) * 100
+                change = f"{pct_change:+.2f}%"
+            else:
+                change = "—"
+            return long_name, profile, market_cap, volume, pbv, price, change, eps, pe_ratio, net_profit_margin
+        except Exception:
+            return ticker, "", "—", "—", "—", "—", "—", "—", "—", "—"
 
     #     # Plot price chart in the 'harga' frame if data is provided
     #     if stock_df is not None and not stock_df.empty:
     #         self.plot_price(stock_df, stock_name)
     #         self.plot_volume(stock_df, stock_name)
     #         self.plot_equity(stock_df, stock_name)
-    #         self.plot_revenue(stock_name)
+    #         self.plot_revenue(stock_df, stock_name)
     #     # Show company profile in the profile frame
     #     self.set_company_profile(stock_name)
 
@@ -1055,7 +1375,7 @@ def main():
     }                  
     """)
 
-    window = MainMenu()
+    window = loginpage()
 
     window.show()
     app.exec()
