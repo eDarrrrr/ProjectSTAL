@@ -11,3 +11,7 @@ Baru bisa di jalanin
 7. python main.py
 
 tapi ini masih untuk windows si
+
+## Daftar anggota dan kontribusi
+1. Fathih Rayyandra Firmansyah - Window stock insight, Create account function, Stock algorithm
+2. 
