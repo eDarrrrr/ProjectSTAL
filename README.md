@@ -10,7 +10,6 @@ Dengan adanya aplikasi ini, diharapkan pengguna dapat lebih mudah menganalisis k
 
 ## Tentang Kelompok 5  
 Project ini dikembangkan oleh **Kelompok 5** yang beranggotakan:
-**Anggota Kelompok 5:**  
 - Muhammad Haidar Al Ghifari
 - Rania Maryam Muthmainnah
 - Fathih Rayyandra Firmansyah
