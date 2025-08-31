@@ -12,7 +12,7 @@ Dengan adanya aplikasi ini, diharapkan pengguna dapat lebih mudah menganalisis k
 Project ini dikembangkan oleh **Kelompok 5** yang beranggotakan:
 - Muhammad Haidar Al Ghifari
 - Rania Maryam Muthmainnah
-- Fathih Rayyandra Firmansyah
+- Fathih Rayyandra Firmansyah - Window stock insight, Create account function, Stock algorithm
 - Gregorius Petrus Leslie
 ---
 ## Cara Menjalankan  
