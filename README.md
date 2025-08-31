@@ -10,7 +10,7 @@ Dengan adanya aplikasi ini, diharapkan pengguna dapat lebih mudah menganalisis k
 
 ## Tentang Kelompok 5  
 Project ini dikembangkan oleh **Kelompok 5** yang beranggotakan:
-- Muhammad Haidar Al Ghifari - reset password feature, all of firebase feature, main menu feature(search bar, trending, etc)
+- Muhammad Haidar Al Ghifari - reset password feature, all of firebase feature, all of main menu feature(search bar, trending, etc)
 - Rania Maryam Muthmainnah - login page, main menu page, create account page
 - Fathih Rayyandra Firmansyah - Window stock insight, Create account function, Stock algorithm
 - Gregorius Petrus Leslie
