@@ -1,6 +1,6 @@
 # Project GUI STAL 
 
-## 📖 Tentang Project  
+## Tentang Project  
 Project ini merupakan aplikasi berbasis **Python** dan didesain menggunakan **Qt Designer**.  
 Aplikasi untuk membantu trader menganalisis pergerakan saham ataupun keuangan perusahaan. Fiturnya berupa visualisasi chart price, keuangan perusahaan ataupun prediksi keuangan perusahaan dengan metode numerik
 
@@ -8,7 +8,7 @@ Dengan adanya aplikasi ini, diharapkan pengguna dapat lebih mudah menganalisis k
 
 ---
 
-## 👥 Tentang Kelompok 5  
+## Tentang Kelompok 5  
 Project ini dikembangkan oleh **Kelompok 5** yang beranggotakan:
 **Anggota Kelompok 5:**  
 - Muhammad Haidar Al Ghifari
@@ -16,7 +16,7 @@ Project ini dikembangkan oleh **Kelompok 5** yang beranggotakan:
 - Fathih Rayyandra Firmansyah
 - Gregorius Petrus Leslie
 ---
-## ⚙️ Cara Menjalankan  
+## Cara Menjalankan  
 1. Pastikan Python sudah terpasang di komputer.  
 2. Jalankan file `STAL.bat` atau `run.bat`. File ini akan:  
    - Membuat virtual environment (`.venv`) jika belum ada.  
