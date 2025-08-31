@@ -1,4 +1,4 @@
-# Project GUI STAL 
+# Project GUI - STAL 
 
 ## Tentang Project  
 Project ini merupakan aplikasi berbasis **Python** dan didesain menggunakan **Qt Designer**.  
