@@ -1,21 +1,36 @@
 @echo off
 setlocal ENABLEDELAYEDEXPANSION
-
-REM pindah ke folder skrip ini
 cd /d "%~dp0"
 
-REM 1) buat venv kalau belum ada
+REM 1) pilih interpreter python prioritas: 3.12 -> 3.11 -> default
+set PY_CMD=
+for %%V in (3.12 3.11) do (
+  py -%%V -c "import sys" >nul 2>&1
+  if !errorlevel! == 0 (
+    set "PY_CMD=py -%%V"
+    goto :gotpy
+  )
+)
+REM fallback
+set "PY_CMD=py -3"
+:gotpy
+
+echo [INFO] Python launcher: %PY_CMD%
+
+REM 2) buat venv kalau belum ada
 if not exist ".venv" (
   echo [INFO] Membuat virtualenv .venv ...
-  py -3 -m venv .venv || (
-    echo [ERROR] Gagal membuat venv. Pastikan Python ter-install dan 'py' tersedia.
+  %PY_CMD% -m venv .venv || (
+    echo [ERROR] Gagal membuat venv. Pastikan Python ter-install.
     pause & exit /b 1
   )
 )
 
-REM 2) aktifkan venv + install requirements
+REM 3) aktifkan venv + install requirements
 call ".venv\Scripts\activate.bat"
+python -c "import sys; print('[INFO] Python in venv:', sys.version)"
 python -m pip install --upgrade pip
+
 if exist requirements.txt (
   echo [INFO] Install dependencies dari requirements.txt ...
   python -m pip install -r requirements.txt || (
@@ -26,12 +41,7 @@ if exist requirements.txt (
   echo [WARN] requirements.txt tidak ditemukan. Lewati install.
 )
 
-REM 3) jalankan app dengan interpreter venv
+REM 4) jalankan GUI tanpa console
 echo [INFO] Menjalankan main.py ...
 start "" ".venv\Scripts\pythonw.exe" main.py
-set EXITCODE=%ERRORLEVEL%
-
-echo.
-echo [INFO] Program selesai (exit code %EXITCODE%), membuka program...
-pause
-exit /b %EXITCODE%
+exit /b 0
