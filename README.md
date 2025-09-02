@@ -12,7 +12,7 @@ Dengan adanya aplikasi ini, diharapkan pengguna dapat lebih mudah menganalisis k
 Project ini dikembangkan oleh **Kelompok 5** yang beranggotakan:
 - Muhammad Haidar Al Ghifari - reset password feature, all of firebase feature, all of main menu feature(search bar, trending, etc)
 - Rania Maryam Muthmainnah - login page, main menu page, create account page
-- Fathih Rayyandra Firmansyah - Window stock insight UI and data, Create account function, Stock algorithm
+- Fathih Rayyandra Firmansyah - All of window stock insight UI and data(matplot, numpy and worthmeter),  all of stock algorithm
 - Gregorius Petrus Leslie
 ---
 ## Cara Menjalankan  
