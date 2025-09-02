@@ -548,7 +548,9 @@ class StockDataWindow(QMainWindow):
         uic.loadUi("ui/CompanyStockDashboard.ui", self)
         self.setWindowTitle("Stock Data")
         # Set company long name, profile, market cap, volume, price, and change
-        long_name, profile, market_cap, volume, pbv, price, change, eps, pe_ratio, net_profit_margin = self.get_company_info(stock_name)
+
+        long_name, profile, market_cap, volume, pbv, price, change, eps, pe_ratio, _ = self.get_company_info(stock_name)
+
         # Print company worth score in terminal
         try:
             import Algoritm as al
@@ -559,6 +561,7 @@ class StockDataWindow(QMainWindow):
                 self.worthmeter.setText(f"Worthmeter : {score}")
         except Exception as e:
             print(f"[Error calculating company worth score]: {e}")
+
         if hasattr(self, "companyName"):
             self.companyName.setText(long_name)
         if hasattr(self, "companySubtitle"):
@@ -577,8 +580,18 @@ class StockDataWindow(QMainWindow):
             self.lblEPS.setText(f"EPS: {eps}")
         if hasattr(self, "lblPE"):
             self.lblPE.setText(f"PE Ratio: {pe_ratio}")
-        if hasattr(self, "lblNP"):
-            self.lblNP.setText(f"Net Profit Margin: {net_profit_margin}")
+        # --- Net Profit Margin calculation and display ---
+        try:
+            from Algoritm import get_latest_net_profit_margin
+            net_profit_margin, latest_profit, latest_revenue, latest_quarter = get_latest_net_profit_margin(stock_name)
+            if hasattr(self, "lblNP"):
+                if net_profit_margin is not None:
+                    self.lblNP.setText(f"Net Profit Margin: {net_profit_margin:.2f}%")
+                else:
+                    self.lblNP.setText("Net Profit Margin: -")
+        except Exception as e:
+            if hasattr(self, "lblNP"):
+                self.lblNP.setText("Net Profit Margin: -")
 
         # Plot price charts in tab widgets: day, month, year
         if stock_name:
