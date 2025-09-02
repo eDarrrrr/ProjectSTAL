@@ -32,4 +32,10 @@ Project ini dikembangkan oleh **Kelompok 5** yang beranggotakan:
 ### Main Menu  
 ![Main Menu](assets/mainmenu.png)  
 
+### Stock Insight
+<img width="2880" height="1800" alt="Screenshot 2025-09-02 at 09 02 45" src="https://github.com/user-attachments/assets/c81a1542-0d9d-4b52-9a70-d3ef58cfe689" />
+
+<img width="2880" height="1800" alt="Screenshot 2025-09-02 at 09 02 59" src="https://github.com/user-attachments/assets/ee40d35f-270f-445d-8695-b8671559fb1a" />
+
+
 ---
