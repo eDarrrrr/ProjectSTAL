@@ -445,6 +445,43 @@ def plot_quarterly_revenue_last_5_years(ticker: str):
     except Exception as e:
         print(f"Could not fetch or plot quarterly revenue data: {e}")
 
+# ========== NET PROFIT MARGIN ========== 
+def get_latest_net_profit_margin(ticker: str):
+    """
+    Calculate the latest net profit margin (%) using yfinance quarterly financials.
+    Returns (net_profit_margin, latest_profit, latest_revenue, latest_quarter) or (None, None, None, None) if not available.
+    """
+    try:
+        yf_ticker = yf.Ticker(ticker)
+        # Try to get quarterly financials (income statement)
+        income_stmt = getattr(yf_ticker, "quarterly_income_stmt", None)
+        if income_stmt is None or income_stmt.empty:
+            income_stmt = getattr(yf_ticker, "quarterly_financials", None)
+        if income_stmt is None or income_stmt.empty:
+            return None, None, None, None
+        # Find revenue and profit rows
+        for rev_key in ['Total Revenue', 'TotalRevenue', 'totalRevenue']:
+            if rev_key in income_stmt.index:
+                revenue_row = income_stmt.loc[rev_key]
+                break
+        else:
+            return None, None, None, None
+        for prof_key in ['Net Income', 'NetIncome', 'netIncome', 'Net Income Applicable To Common Shares']:
+            if prof_key in income_stmt.index:
+                profit_row = income_stmt.loc[prof_key]
+                break
+        else:
+            return None, None, None, None
+        # Use the latest quarter where both are available
+        for date in revenue_row.index:
+            revenue = revenue_row[date]
+            profit = profit_row[date] if date in profit_row.index else None
+            if revenue is not None and profit is not None and revenue != 0:
+                net_profit_margin = (profit / revenue) * 100
+                return round(net_profit_margin, 2), profit, revenue, str(date)[:7]
+        return None, None, None, None
+    except Exception as e:
+        return None, None, None, None
 def main(SearchInput):
     while True:
         # raw = input("Search (contoh: AAPL atau TATAMOTORS): ")
