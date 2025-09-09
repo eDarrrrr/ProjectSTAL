@@ -279,6 +279,8 @@ class loginpage(QDialog):
                 msg = "Password salah."
             elif msg == "USER_DISABLED":
                 msg = "Akun dinonaktifkan."
+            elif msg == "INVALID_LOGIN_CREDENTIALS":
+                msg = "Kredensial tidak valid."
             QMessageBox.critical(self, "Login Failed", msg)
 
         except Exception as e:
